@@ -6,7 +6,7 @@ import pytz
 
 from gtfspy.routing.plots import plot_temporal_distance_variation
 from settings import HELSINKI_NODES_FNAME
-from compute_node_profiles import get_profile_data
+from compute import get_profile_data
 
 
 target_stop_I = 115

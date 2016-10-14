@@ -18,13 +18,15 @@ from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIM
 NPA = NodeProfileAnalyzer  # just a shorter alias for the lines below
 profile_summary_methods = [
     NPA.min_trip_duration, NPA.max_trip_duration, NPA.mean_trip_duration, NPA.median_trip_duration,
-    NPA.min_temporal_distance, NPA.max_temporal_distance, NPA.mean_temporal_distance, NPA.mean_temporal_distance
+    NPA.min_temporal_distance, NPA.max_temporal_distance, NPA.mean_temporal_distance, NPA.mean_temporal_distance,
+    NPA.n_pareto_optimal_trips
 ]
 NPA = None
 
 profile_observable_names = [
     "min_trip_duration", "max_trip_duration", "mean_trip_duration", "median_trip_duration",
-    "min_temporal_distance", "max_temporal_distance", "mean_temporal_distance", "median_temporal_distance"
+    "min_temporal_distance", "max_temporal_distance", "mean_temporal_distance", "median_temporal_distance",
+    "n_trips"
 ]
 
 
@@ -42,16 +44,18 @@ def get_profile_data(target_stop_I=115, recompute=False):
     return profiles
 
 
-def get_node_profile_statistics(target_stop_I, recompute=False):
+def get_node_profile_statistics(target_stop_I, recompute=False, recompute_profiles=False):
     profile_statistics_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_statistics_" +
                                             str(target_stop_I) + ".pickle")
+    if recompute_profiles:
+        recompute = True
     if not recompute and os.path.exists(profile_statistics_fname):
         print("Loading precomputed statistics")
         observable_name_to_data = pickle.load(open(profile_statistics_fname, 'rb'))
         print("Loaded precomputed statistics")
     else:
         print("Recomputing statistics")
-        observable_name_to_data = _compute_node_profile_statistics(target_stop_I)
+        observable_name_to_data = _compute_node_profile_statistics(target_stop_I, recompute_profiles)
         pickle.dump(observable_name_to_data, open(profile_statistics_fname, 'wb'), -1)
         print("Recomputed statistics")
     return observable_name_to_data
@@ -83,8 +87,8 @@ def _compute_profile_data(target_stop_I=115):
     return profiles
 
 
-def _compute_node_profile_statistics(target_stop_I):
-    profile_data = get_profile_data(target_stop_I)['profiles']
+def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
+    profile_data = get_profile_data(target_stop_I, recompute=recompute_profiles)['profiles']
     profile_summary_data = [[] for _ in range(len(profile_observable_names))]
 
     observable_name_to_method = dict(zip(profile_observable_names, profile_summary_methods))
@@ -101,5 +105,4 @@ def _compute_node_profile_statistics(target_stop_I):
             method = observable_name_to_method[observable_name]
             observable_value = method(profile_analyzer)
             observable_name_to_data[observable_name].append(observable_value)
-
     return observable_name_to_data

@@ -1,10 +1,9 @@
 import os
 
 import matplotlib
-import matplotlib.colors
 import matplotlib.cm
+import matplotlib.colors
 import matplotlib.pyplot as plt
-
 import mplleaflet
 import numpy
 import smopy
@@ -16,15 +15,17 @@ import folium
 import pandas
 from jinja2 import Template
 
-from compute_node_profiles import get_profile_data, _compute_node_profile_statistics, get_node_profile_statistics
+from compute import get_node_profile_statistics
 
 from jinja2.environment import Environment
-from settings import HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP, ANALYSIS_START_TIME_DEP, DARK_TILES
+from settings import HELSINKI_NODES_FNAME, DARK_TILES
 from settings import RESULTS_DIRECTORY
 
 
 def main():
-    target_stop_I = 115
+    target_stop_I = 115  # kamppi
+    # target_stop_I = 3063  # kilo
+    basename = RESULTS_DIRECTORY + "/helsinki_test_" + str(target_stop_I) + "_"
 
     nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
     data = get_node_profile_statistics(target_stop_I)
@@ -35,19 +36,23 @@ def main():
     for observable_name in observable_names:
         observable_values = observable_name_to_data[observable_name]
         # set up colors
-        norm = matplotlib.colors.Normalize(vmin=0, vmax=60)
+        if observable_name != "n_trips":
+            observable_values_to_plot = numpy.array(observable_values) / 60.0
+            norm = matplotlib.colors.Normalize(vmin=0, vmax=60)
+        else:
+            observable_values_to_plot = observable_values
+            norm = matplotlib.colors.Normalize(vmin=0, vmax=40)
         cmap = matplotlib.cm.get_cmap(name="viridis_r", lut=None)
         sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
         sm.set_array([norm.vmin, norm.vmax])
 
-        observable_values_min = numpy.array(observable_values) / 60.0
         for _plot_func in [_plot_smopy]:  # , _plot_folium]:
-            _plot_func(nodes['lat'], nodes['lon'], observable_values_min, observable_name, sm)
+            _plot_func(nodes['lat'], nodes['lon'], observable_values_to_plot, observable_name, sm, basename)
 
         print("Done with " + observable_name)
 
 
-def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar_mappable):
+def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar_mappable, basename):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     colors = scalar_mappable.to_rgba(observable_values_min)
@@ -57,10 +62,10 @@ def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar
     cbar = fig.colorbar(scalar_mappable)
 
     ax.set_title(observable_name)
-    mplleaflet.save_html(fig, RESULTS_DIRECTORY + "/helsinki_test_mplleaflet_" + observable_name + ".html")
+    mplleaflet.save_html(fig, basename + observable_name + ".html")
 
 
-def _plot_smopy(lats, lons, observable_values_min, observable_name, scalar_mappable):
+def _plot_smopy(lats, lons, observable_values_min, observable_name, scalar_mappable, basename):
     smopy_map = smopy.Map((lats.min(), lons.min(), lats.max(), lons.max()), z=10)
 
     fig = plt.figure()
@@ -77,10 +82,10 @@ def _plot_smopy(lats, lons, observable_values_min, observable_name, scalar_mappa
     cbar = fig.colorbar(scalar_mappable)
 
     ax.set_title(observable_name)
-    fig.savefig(RESULTS_DIRECTORY + "/helsinki_test_smopy_" + observable_name + ".pdf")
+    fig.savefig(basename +  observable_name + ".pdf")
 
 
-def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable):
+def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable, basename):
     center_lat = (numpy.percentile(lats, 1) + numpy.percentile(lats, 99)) / 2.
     center_lon = (numpy.percentile(lons, 1) + numpy.percentile(lons, 99)) / 2.
 
@@ -102,7 +107,7 @@ def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable
     mapa = folium.Map([center_lat, center_lon], zoom_start=12, tiles=DARK_TILES, detect_retina=True)
     mapa.add_child(f)
     # mapa.add_child(cm)
-    mapa.save(os.path.join(RESULTS_DIRECTORY, "helsinki_profile_test_folium_" + observable_name + ".html"))
+    mapa.save(basename + observable_name + ".html")
 
 
 
