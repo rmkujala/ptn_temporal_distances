@@ -8,8 +8,8 @@ import pandas
 
 from gtfspy.routing.connection_scan_profile import ConnectionScanProfiler
 from gtfspy.routing.models import Connection
-from routing.node_profile import NodeProfile
-from routing.node_profile_analyzer import NodeProfileAnalyzer
+from gtfspy.routing.node_profile import NodeProfile
+from gtfspy.routing.node_profile_analyzer import NodeProfileAnalyzer
 
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
     ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP

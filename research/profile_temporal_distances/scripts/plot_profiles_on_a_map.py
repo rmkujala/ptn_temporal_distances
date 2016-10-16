@@ -23,33 +23,33 @@ from settings import RESULTS_DIRECTORY
 
 
 def main():
-    target_stop_I = 115  # kamppi
-    # target_stop_I = 3063  # kilo
-    basename = RESULTS_DIRECTORY + "/helsinki_test_" + str(target_stop_I) + "_"
+    target_stop_Is = [115, 3063] #kamppi, kilo
+    for target_stop_I in target_stop_Is:
+        basename = RESULTS_DIRECTORY + "/helsinki_test_" + str(target_stop_I) + "_"
 
-    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
-    data = get_node_profile_statistics(target_stop_I)
-    observable_name_to_data = data
-    observable_names = sorted(list(observable_name_to_data.keys()))
+        nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
+        data = get_node_profile_statistics(target_stop_I)
+        observable_name_to_data = data
+        observable_names = sorted(list(observable_name_to_data.keys()))
 
-    print("Producing figures")
-    for observable_name in observable_names:
-        observable_values = observable_name_to_data[observable_name]
-        # set up colors
-        if observable_name != "n_trips":
-            observable_values_to_plot = numpy.array(observable_values) / 60.0
-            norm = matplotlib.colors.Normalize(vmin=0, vmax=60)
-        else:
-            observable_values_to_plot = observable_values
-            norm = matplotlib.colors.Normalize(vmin=0, vmax=40)
-        cmap = matplotlib.cm.get_cmap(name="viridis_r", lut=None)
-        sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-        sm.set_array([norm.vmin, norm.vmax])
+        print("Producing figures")
+        for observable_name in observable_names:
+            observable_values = observable_name_to_data[observable_name]
+            # set up colors
+            if observable_name != "n_trips":
+                observable_values_to_plot = numpy.array(observable_values) / 60.0
+                norm = matplotlib.colors.Normalize(vmin=0, vmax=60)
+            else:
+                observable_values_to_plot = observable_values
+                norm = matplotlib.colors.Normalize(vmin=0, vmax=40)
+            cmap = matplotlib.cm.get_cmap(name="viridis_r", lut=None)
+            sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+            sm.set_array([norm.vmin, norm.vmax])
 
-        for _plot_func in [_plot_smopy]:  # , _plot_folium]:
-            _plot_func(nodes['lat'], nodes['lon'], observable_values_to_plot, observable_name, sm, basename)
+            for _plot_func in [_plot_smopy]:  # , _plot_folium]:
+                _plot_func(nodes['lat'], nodes['lon'], observable_values_to_plot, observable_name, sm, basename)
 
-        print("Done with " + observable_name)
+            print("Done with " + observable_name)
 
 
 def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar_mappable, basename):
