@@ -15,19 +15,7 @@ from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIM
     ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP
 
 
-NPA = NodeProfileAnalyzer  # just a shorter alias for the lines below
-profile_summary_methods = [
-    NPA.min_trip_duration, NPA.max_trip_duration, NPA.mean_trip_duration, NPA.median_trip_duration,
-    NPA.min_temporal_distance, NPA.max_temporal_distance, NPA.mean_temporal_distance, NPA.mean_temporal_distance,
-    NPA.n_pareto_optimal_trips
-]
-NPA = None
-
-profile_observable_names = [
-    "min_trip_duration", "max_trip_duration", "mean_trip_duration", "median_trip_duration",
-    "min_temporal_distance", "max_temporal_distance", "mean_temporal_distance", "median_temporal_distance",
-    "n_trips"
-]
+profile_summary_methods, profile_observable_names = NodeProfileAnalyzer.all_measures_and_names_as_lists()
 
 
 def get_profile_data(target_stop_I=115, recompute=False):
@@ -62,6 +50,8 @@ def get_node_profile_statistics(target_stop_I, recompute=False, recompute_profil
 
 
 def _compute_profile_data(target_stop_I=115):
+    max_walk_distance = 500
+    walking_speed = 1.5
     events = pandas.read_csv(HELSINKI_DATA_BASEDIR + "main.day.temporal_network.csv")
     events = events[events["dep_time_ut"] >= ROUTING_START_TIME_DEP]
     time_filtered_events = events[events["dep_time_ut"] <= ROUTING_END_TIME_DEP]
@@ -73,17 +63,25 @@ def _compute_profile_data(target_stop_I=115):
     ]
 
     transfers = pandas.read_csv(HELSINKI_DATA_BASEDIR + "main.day.transfers.csv")
-    filtered_transfers = transfers[transfers["d_walk"] <= 500]
+    filtered_transfers = transfers[transfers["d_walk"] <= max_walk_distance]
     net = networkx.Graph()
     for row in filtered_transfers.itertuples():
         net.add_edge(int(row.from_stop_I), int(row.to_stop_I), {"d_walk": row.d_walk})
 
-    csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=1.5)
+    csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     print("CSA Profiler running...")
     csp.run()
     print("CSA profiler finished")
 
-    profiles = {"target_stop_I": target_stop_I, "profiles": dict(csp.stop_profiles)}
+    parameters = {
+        "target_stop_I": target_stop_I,
+        "walk_distance": max_walk_distance,
+        "walking_speed": walking_speed
+    }
+
+    profiles = {"params": parameters,
+                "profiles": dict(csp.stop_profiles)
+    }
     return profiles
 
 
@@ -100,9 +98,11 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
             profile = profile_data[stop_I]
         except KeyError:
             profile = NodeProfile()
+
         profile_analyzer = NodeProfileAnalyzer(profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
         for observable_name in profile_observable_names:
             method = observable_name_to_method[observable_name]
             observable_value = method(profile_analyzer)
             observable_name_to_data[observable_name].append(observable_value)
+
     return observable_name_to_data

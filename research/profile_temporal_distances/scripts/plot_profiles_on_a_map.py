@@ -23,11 +23,13 @@ from settings import RESULTS_DIRECTORY
 
 
 def main():
-    target_stop_Is = [115, 3063] #kamppi, kilo
+    target_stop_Is = [115]  # , 3063] #kamppi, kilo
+    plotting_functions = [_plot_folium]  #, _plot_smopy]:
+    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
+    print(nodes)
     for target_stop_I in target_stop_Is:
         basename = RESULTS_DIRECTORY + "/helsinki_test_" + str(target_stop_I) + "_"
 
-        nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
         data = get_node_profile_statistics(target_stop_I)
         observable_name_to_data = data
         observable_names = sorted(list(observable_name_to_data.keys()))
@@ -46,13 +48,14 @@ def main():
             sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
             sm.set_array([norm.vmin, norm.vmax])
 
-            for _plot_func in [_plot_smopy]:  # , _plot_folium]:
-                _plot_func(nodes['lat'], nodes['lon'], observable_values_to_plot, observable_name, sm, basename)
+            for plot_func in plotting_functions:
+                plot_func(nodes['lat'], nodes['lon'], observable_values_to_plot,
+                          observable_name, sm, basename, nodes['desc'])
 
             print("Done with " + observable_name)
 
 
-def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar_mappable, basename):
+def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar_mappable, basename, node_names):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     colors = scalar_mappable.to_rgba(observable_values_min)
@@ -65,7 +68,7 @@ def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar
     mplleaflet.save_html(fig, basename + observable_name + ".html")
 
 
-def _plot_smopy(lats, lons, observable_values_min, observable_name, scalar_mappable, basename):
+def _plot_smopy(lats, lons, observable_values_min, observable_name, scalar_mappable, basename, node_names):
     smopy_map = smopy.Map((lats.min(), lons.min(), lats.max(), lons.max()), z=10)
 
     fig = plt.figure()
@@ -85,18 +88,19 @@ def _plot_smopy(lats, lons, observable_values_min, observable_name, scalar_mappa
     fig.savefig(basename +  observable_name + ".pdf")
 
 
-def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable, basename):
+def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable, basename, node_names):
     center_lat = (numpy.percentile(lats, 1) + numpy.percentile(lats, 99)) / 2.
     center_lon = (numpy.percentile(lons, 1) + numpy.percentile(lons, 99)) / 2.
 
     f = folium.map.FeatureGroup()
-    for lat, lon, value in list(zip(lats, lons, observable_values)):
+    for lat, lon, value, node_name in list(zip(lats, lons, observable_values, node_names)):
         circle = folium.features.CircleMarker(
             [lat, lon],
             radius=100,
             color=None,
             fill_color=matplotlib.colors.rgb2hex(scalar_mappable.to_rgba(value)),
-            fill_opacity=0.6
+            fill_opacity=0.6,
+            popup=str(node_name)
         )
         # monkey patching the template to be less verbose (perhaps not idea, though)
         circle._template = Template(
@@ -108,7 +112,6 @@ def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable
     mapa.add_child(f)
     # mapa.add_child(cm)
     mapa.save(basename + observable_name + ".html")
-
 
 
 if __name__ == "__main__":

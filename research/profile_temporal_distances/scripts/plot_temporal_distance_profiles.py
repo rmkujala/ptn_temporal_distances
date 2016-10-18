@@ -18,6 +18,7 @@ profiles = profile_data["profiles"]
 
 from_stop_Is = [
     123,    # Kamppi (as well)
+    401,    # Kansanelakelaitos
     3356,   # Dipoli
     3063,   # Kilon asema
     5935    # Sorvatie
