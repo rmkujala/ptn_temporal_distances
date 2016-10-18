@@ -14,7 +14,6 @@ from gtfspy.routing.node_profile_analyzer import NodeProfileAnalyzer
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
     ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP
 
-
 profile_summary_methods, profile_observable_names = NodeProfileAnalyzer.all_measures_and_names_as_lists()
 
 
@@ -106,3 +105,11 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
             observable_name_to_data[observable_name].append(observable_value)
 
     return observable_name_to_data
+
+if __name__ == "__main__":
+    # performance testing:
+    orig_routing_end_time_dep = ROUTING_END_TIME_DEP
+    for i in range(-3, 5):
+        ROUTING_END_TIME_DEP = orig_routing_end_time_dep + i * 3600
+        print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
+        _compute_profile_data()
