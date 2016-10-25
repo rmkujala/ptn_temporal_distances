@@ -8,7 +8,7 @@ import pandas
 
 from gtfspy.routing.connection_scan_profile import ConnectionScanProfiler
 from gtfspy.routing.models import Connection
-from gtfspy.routing.node_profile import NodeProfile
+from gtfspy.routing.node_profile_naive import NodeProfileNaive
 from gtfspy.routing.node_profile_analyzer import NodeProfileAnalyzer
 
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
@@ -96,7 +96,7 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
         try:
             profile = profile_data[stop_I]
         except KeyError:
-            profile = NodeProfile()
+            profile = NodeProfileNaive()
 
         profile_analyzer = NodeProfileAnalyzer(profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
         for observable_name in profile_observable_names:
