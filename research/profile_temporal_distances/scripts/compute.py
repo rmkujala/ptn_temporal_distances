@@ -4,17 +4,17 @@ import os
 import pickle
 
 import networkx
-import pandas
 
 from gtfspy.routing.connection_scan_profile import ConnectionScanProfiler
 from gtfspy.routing.models import Connection
 from gtfspy.routing.node_profile_naive import NodeProfileNaive
-from gtfspy.routing.node_profile_analyzer import NodeProfileAnalyzer
+
+from gtfspy.routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
+from gtfspy.routing.pseudo_connection_scan_profiler import PseudoConnectionScanProfiler
 
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
     ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP
 
-profile_summary_methods, profile_observable_names = NodeProfileAnalyzer.all_measures_and_names_as_lists()
 
 
 def get_profile_data(target_stop_I=115, recompute=False):
@@ -48,9 +48,8 @@ def get_node_profile_statistics(target_stop_I, recompute=False, recompute_profil
     return observable_name_to_data
 
 
-def _compute_profile_data(target_stop_I=115):
-    max_walk_distance = 500
-    walking_speed = 1.5
+def _read_connections_pandas():
+    import pandas
     events = pandas.read_csv(HELSINKI_DATA_BASEDIR + "main.day.temporal_network.csv")
     events = events[events["dep_time_ut"] >= ROUTING_START_TIME_DEP]
     time_filtered_events = events[events["dep_time_ut"] <= ROUTING_END_TIME_DEP]
@@ -59,15 +58,70 @@ def _compute_profile_data(target_stop_I=115):
     connections = [
         Connection(int(e.from_stop_I), int(e.to_stop_I), int(e.dep_time_ut), int(e.arr_time_ut), int(e.trip_I))
         for e in time_filtered_events.itertuples()
-    ]
+        ]
+    return connections
 
+
+def _read_connections_csv():
+    import csv
+    # header: from_stop_I, to_stop_I, dep_time_ut, arr_time_ut, route_type, route_id, trip_I, seq
+    from_node_index = 0
+    to_node_index = 1
+    dep_time_index = 2
+    arr_time_index = 3
+    trip_I_index = 6
+    connections = []
+    with open(HELSINKI_DATA_BASEDIR + "main.day.temporal_network.csv", 'r') as csvfile:
+        events_reader = csv.reader(csvfile, delimiter=',')
+        for _row in events_reader:
+            break
+        for row in events_reader:
+            dep_time = int(row[dep_time_index])
+            if ROUTING_END_TIME_DEP >= dep_time >= ROUTING_START_TIME_DEP:
+                connections.append(Connection(int(row[from_node_index]), int(row[to_node_index]), int(row[dep_time_index]),
+                                              int(row[arr_time_index]), int(row[trip_I_index])))
+    connections = sorted(connections, key=lambda conn: -conn.departure_time)
+    return connections
+
+def _read_transfers_pandas(max_walk_distance=500):
+    import pandas
     transfers = pandas.read_csv(HELSINKI_DATA_BASEDIR + "main.day.transfers.csv")
     filtered_transfers = transfers[transfers["d_walk"] <= max_walk_distance]
     net = networkx.Graph()
     for row in filtered_transfers.itertuples():
         net.add_edge(int(row.from_stop_I), int(row.to_stop_I), {"d_walk": row.d_walk})
+    return net
 
-    csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
+def _read_transfers_csv(max_walk_distance=500):
+    import csv
+    # "from_stop_I,to_stop_I,d,d_walk"
+    from_node_index = 0
+    to_node_index = 1
+    d_walk_index = 3
+    net = networkx.Graph()
+    with open(HELSINKI_DATA_BASEDIR + "main.day.transfers.csv", 'r') as csvfile:
+        transfers_reader = csv.reader(csvfile, delimiter=',')
+        for _row in transfers_reader:
+            break
+        for row in transfers_reader:
+            d_walk = int(row[d_walk_index])
+            if d_walk <= max_walk_distance:
+                net.add_edge(int(row[from_node_index]), int(row[to_node_index]), {"d_walk": int(row[d_walk_index])})
+    return net
+
+
+def _compute_profile_data(target_stop_I=115):
+    max_walk_distance = 500
+    walking_speed = 1.5
+    connections = _read_connections_csv()
+    net = _read_transfers_csv(max_walk_distance)
+
+    # csp = PseudoConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
+    #
+    csp = MultiObjectivePseudoCSAProfiler(connections, target_stop=target_stop_I,
+                                         walk_network=net, walk_speed=walking_speed,
+                                         consider_vehicle_legs=False)
+    # csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     print("CSA Profiler running...")
     csp.run()
     print("CSA profiler finished")
@@ -85,6 +139,10 @@ def _compute_profile_data(target_stop_I=115):
 
 
 def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
+    from gtfspy.routing.node_profile_analyzer import NodeProfileAnalyzer
+    import pandas
+    profile_summary_methods, profile_observable_names = NodeProfileAnalyzer.all_measures_and_names_as_lists()
+
     profile_data = get_profile_data(target_stop_I, recompute=recompute_profiles)['profiles']
     profile_summary_data = [[] for _ in range(len(profile_observable_names))]
 
@@ -109,7 +167,7 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
 if __name__ == "__main__":
     # performance testing:
     orig_routing_end_time_dep = ROUTING_END_TIME_DEP
-    for i in range(-3, 5):
+    for i in range(-3, -2): # , 5):
         ROUTING_END_TIME_DEP = orig_routing_end_time_dep + i * 3600
         print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
         _compute_profile_data()
