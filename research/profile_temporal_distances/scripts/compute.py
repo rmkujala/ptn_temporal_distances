@@ -5,11 +5,11 @@ import pickle
 
 import networkx
 
-from gtfspy.routing.connection_scan_profile import ConnectionScanProfiler
 from gtfspy.routing.models import Connection
-from gtfspy.routing.node_profile_naive import NodeProfileNaive
+from gtfspy.routing.node_profile_naive import NodeProfileSimple
 
 from gtfspy.routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
+from gtfspy.routing.connection_scan_profile import ConnectionScanProfiler
 from gtfspy.routing.pseudo_connection_scan_profiler import PseudoConnectionScanProfiler
 
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
@@ -119,10 +119,11 @@ def _compute_profile_data(target_stop_I=115):
     # csp = PseudoConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     #
     csp = MultiObjectivePseudoCSAProfiler(connections, target_stop=target_stop_I,
-                                         walk_network=net, walk_speed=walking_speed,
-                                         consider_vehicle_legs=False)
+                                          walk_network=net, walk_speed=walking_speed,
+                                          track_vehicle_legs=True, track_time=True, verbose=True)
     # csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     print("CSA Profiler running...")
+    print(len(csp._all_connections))
     csp.run()
     print("CSA profiler finished")
 
@@ -139,9 +140,9 @@ def _compute_profile_data(target_stop_I=115):
 
 
 def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
-    from gtfspy.routing.node_profile_analyzer import NodeProfileAnalyzer
+    from gtfspy.routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
     import pandas
-    profile_summary_methods, profile_observable_names = NodeProfileAnalyzer.all_measures_and_names_as_lists()
+    profile_summary_methods, profile_observable_names = NodeProfileAnalyzerTime.all_measures_and_names_as_lists()
 
     profile_data = get_profile_data(target_stop_I, recompute=recompute_profiles)['profiles']
     profile_summary_data = [[] for _ in range(len(profile_observable_names))]
@@ -154,9 +155,9 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
         try:
             profile = profile_data[stop_I]
         except KeyError:
-            profile = NodeProfileNaive()
+            profile = NodeProfileSimple()
 
-        profile_analyzer = NodeProfileAnalyzer(profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
+        profile_analyzer = NodeProfileAnalyzerTime(profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
         for observable_name in profile_observable_names:
             method = observable_name_to_method[observable_name]
             observable_value = method(profile_analyzer)
@@ -167,7 +168,7 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
 if __name__ == "__main__":
     # performance testing:
     orig_routing_end_time_dep = ROUTING_END_TIME_DEP
-    for i in range(-3, -2): # , 5):
+    for i in range(-3, -1):  # , 5):
         ROUTING_END_TIME_DEP = orig_routing_end_time_dep + i * 3600
         print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
         _compute_profile_data()
