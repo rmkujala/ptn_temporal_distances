@@ -12,7 +12,7 @@ from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END
 from compute import get_profile_data
 
 target_stop_I = 115
-profile_data = get_profile_data(recompute=False)
+profile_data = get_profile_data(recompute=True)
 
 nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
 

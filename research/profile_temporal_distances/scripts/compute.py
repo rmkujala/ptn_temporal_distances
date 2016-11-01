@@ -6,7 +6,7 @@ import pickle
 import networkx
 
 from gtfspy.routing.models import Connection
-from gtfspy.routing.node_profile_naive import NodeProfileSimple
+from gtfspy.routing.node_profile_simple import NodeProfileSimple
 
 from gtfspy.routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
 from gtfspy.routing.connection_scan_profile import ConnectionScanProfiler
@@ -168,7 +168,7 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
 if __name__ == "__main__":
     # performance testing:
     orig_routing_end_time_dep = ROUTING_END_TIME_DEP
-    for i in range(-3, -1):  # , 5):
+    for i in range(0, 1):  # , 5):
         ROUTING_END_TIME_DEP = orig_routing_end_time_dep + i * 3600
         print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
         _compute_profile_data()
