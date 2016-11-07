@@ -1,0 +1,118 @@
+import os
+
+import matplotlib
+import matplotlib.cm
+import matplotlib.colors
+import matplotlib.pyplot as plt
+import mplleaflet
+import numpy
+import smopy
+
+smopy.TILE_SERVER = "http://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+
+import folium
+
+import pandas
+from jinja2 import Template
+
+from compute import get_node_profile_statistics
+
+from jinja2.environment import Environment
+from settings import HELSINKI_NODES_FNAME, DARK_TILES
+from settings import RESULTS_DIRECTORY
+
+
+def main():
+    target_stop_Is = [115]  # , 3063] #kamppi, kilo
+    plotting_functions = [_plot_folium]  #, _plot_smopy]:
+    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
+    print(nodes)
+    for target_stop_I in target_stop_Is:
+        basename = RESULTS_DIRECTORY + "/helsinki_test_" + str(target_stop_I) + "_"
+
+        data = get_node_profile_statistics(target_stop_I)
+        observable_name_to_data = data
+        observable_names = sorted(list(observable_name_to_data.keys()))
+
+        print("Producing figures")
+        for observable_name in observable_names:
+            observable_values = observable_name_to_data[observable_name]
+            # set up colors
+            if observable_name != "n_trips":
+                observable_values_to_plot = numpy.array(observable_values) / 60.0
+                norm = matplotlib.colors.Normalize(vmin=0, vmax=60)
+            else:
+                observable_values_to_plot = observable_values
+                norm = matplotlib.colors.Normalize(vmin=0, vmax=40)
+            cmap = matplotlib.cm.get_cmap(name="viridis_r", lut=None)
+            sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+            sm.set_array([norm.vmin, norm.vmax])
+
+            for plot_func in plotting_functions:
+                plot_func(nodes['lat'], nodes['lon'], observable_values_to_plot,
+                          observable_name, sm, basename, nodes['desc'])
+
+            print("Done with " + observable_name)
+
+
+def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar_mappable, basename, node_names):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    colors = scalar_mappable.to_rgba(observable_values_min)
+
+    assert (isinstance(ax, matplotlib.axes.Axes))
+    ax.scatter(lons, lats, c=colors, edgecolors=colors, s=10)
+    cbar = fig.colorbar(scalar_mappable)
+
+    ax.set_title(observable_name)
+    mplleaflet.save_html(fig, basename + observable_name + ".html")
+
+
+def _plot_smopy(lats, lons, observable_values_min, observable_name, scalar_mappable, basename, node_names):
+    smopy_map = smopy.Map((lats.min(), lons.min(), lats.max(), lons.max()), z=10)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax = smopy_map.show_mpl(figsize=(8, 6), ax=ax)
+    xs, ys = smopy_map.to_pixels(lats, lons)
+
+    ax.set_xlim(numpy.percentile(xs, 1), numpy.percentile(xs, 99))
+    ax.set_ylim(numpy.percentile(ys, 99), numpy.percentile(ys, 1))
+    colors = scalar_mappable.to_rgba(observable_values_min)
+
+    assert(isinstance(ax, matplotlib.axes.Axes))
+    ax.scatter(xs, ys, c=colors, edgecolors=colors, s=10)
+    cbar = fig.colorbar(scalar_mappable)
+
+    ax.set_title(observable_name)
+    fig.savefig(basename +  observable_name + ".pdf")
+
+
+def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable, basename, node_names):
+    center_lat = (numpy.percentile(lats, 1) + numpy.percentile(lats, 99)) / 2.
+    center_lon = (numpy.percentile(lons, 1) + numpy.percentile(lons, 99)) / 2.
+
+    f = folium.map.FeatureGroup()
+    for lat, lon, value, node_name in list(zip(lats, lons, observable_values, node_names)):
+        circle = folium.features.CircleMarker(
+            [lat, lon],
+            radius=100,
+            color=None,
+            fill_color=matplotlib.colors.rgb2hex(scalar_mappable.to_rgba(value)),
+            fill_opacity=0.6,
+            popup=str(node_name)
+        )
+        # monkey patching the template to be less verbose (perhaps not idea, though)
+        circle._template = Template(
+            u" {% macro script(this, kwargs) %} var {{this.get_name()}} = L.circle( [{{this.location[0]}},{{this.location[1]}}], {{ this.radius }}, { color: '{{ this.color }}', fillColor: '{{ this.fill_color }}', fillOpacity: {{ this.fill_opacity }} } ).addTo({{this._parent.get_name()}}); {% endmacro %} ")
+        circle._template.environment = Environment(trim_blocks=True, lstrip_blocks=True)
+        f.add_child(circle)
+
+    mapa = folium.Map([center_lat, center_lon], zoom_start=12, tiles=DARK_TILES, detect_retina=True)
+    mapa.add_child(f)
+    # mapa.add_child(cm)
+    mapa.save(basename + observable_name + ".html")
+
+
+if __name__ == "__main__":
+    main()
