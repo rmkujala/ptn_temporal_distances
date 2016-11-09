@@ -5,12 +5,12 @@ import pickle
 
 import networkx
 
-from gtfspy.routing.models import Connection
-from gtfspy.routing.node_profile_simple import NodeProfileSimple
+from routing.models import Connection
+from routing.node_profile_simple import NodeProfileSimple
 
-from gtfspy.routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
-from gtfspy.routing.connection_scan_profile import ConnectionScanProfiler
-from gtfspy.routing.pseudo_connection_scan_profiler import PseudoConnectionScanProfiler
+from routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
+from routing.connection_scan_profile import ConnectionScanProfiler
+from routing.pseudo_connection_scan_profiler import PseudoConnectionScanProfiler
 
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
     ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP
@@ -22,6 +22,7 @@ def get_profile_data(target_stop_I=115, recompute=False):
     if not recompute and os.path.exists(node_profiles_fname):
         print("Loading precomputed data")
         profiles = pickle.load(open(node_profiles_fname, 'rb'))
+        print(profiles)
         print("Loaded precomputed data")
     else:
         print("Recomputing profiles")
@@ -117,10 +118,10 @@ def _compute_profile_data(target_stop_I=115):
     net = _read_transfers_csv(max_walk_distance)
 
     # csp = PseudoConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
-    #
     csp = MultiObjectivePseudoCSAProfiler(connections, target_stop=target_stop_I,
                                           walk_network=net, walk_speed=walking_speed,
-                                          track_vehicle_legs=True, track_time=True, verbose=True)
+                                          track_vehicle_legs=True, track_time=True, verbose=False)
+
     # csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     print("CSA Profiler running...")
     print(len(csp._all_connections))
@@ -140,7 +141,7 @@ def _compute_profile_data(target_stop_I=115):
 
 
 def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
-    from gtfspy.routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
+    from routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
     import pandas
     profile_summary_methods, profile_observable_names = NodeProfileAnalyzerTime.all_measures_and_names_as_lists()
 
@@ -168,7 +169,8 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
 if __name__ == "__main__":
     # performance testing:
     orig_routing_end_time_dep = ROUTING_END_TIME_DEP
-    for i in range(0, 1):  # , 5):
-        ROUTING_END_TIME_DEP = orig_routing_end_time_dep + i * 3600
+    for i in range(1, 2):  # , 5):
+        ROUTING_END_TIME_DEP = ROUTING_START_TIME_DEP + i * 3600
         print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
         _compute_profile_data()
+        exit()
