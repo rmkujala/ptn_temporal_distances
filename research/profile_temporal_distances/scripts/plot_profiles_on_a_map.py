@@ -113,6 +113,5 @@ def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable
     # mapa.add_child(cm)
     mapa.save(basename + observable_name + ".html")
 
-
 if __name__ == "__main__":
     main()
