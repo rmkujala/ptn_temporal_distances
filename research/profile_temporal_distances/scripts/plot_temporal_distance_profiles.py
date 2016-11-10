@@ -11,8 +11,8 @@ from routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerT
 from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP
 from compute import get_profile_data
 
-target_stop_I = 115
-profile_data = get_profile_data(recompute=True)
+target_stop_I = 3491
+profile_data = get_profile_data(target_stop_I, recompute=True)
 
 nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
 
@@ -23,7 +23,8 @@ from_stop_Is = [
     401,    # Kansanelakelaitos
     3356,   # Dipoli
     3063,   # Kilon asema
-    5935    # Sorvatie
+    5935,   # Sorvatie
+    3101,   # lahderannanristi
 ]
 
 timezone = pytz.timezone("Europe/Helsinki")
@@ -42,5 +43,4 @@ for from_stop_I in from_stop_Is:
     ax = fig.get_axes()[0]
     ax.set_title(u"From " + from_stop_name + u" to " + target_stop_name)
     fig.savefig(u"../results/" + from_stop_name + "_to_" + target_stop_name + ".pdf")
-
 
