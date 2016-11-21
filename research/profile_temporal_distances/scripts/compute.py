@@ -84,6 +84,7 @@ def _read_connections_csv():
     connections = sorted(connections, key=lambda conn: -conn.departure_time)
     return connections
 
+
 def _read_transfers_pandas(max_walk_distance=500):
     import pandas
     transfers = pandas.read_csv(HELSINKI_DATA_BASEDIR + "main.day.transfers.csv")
@@ -92,6 +93,7 @@ def _read_transfers_pandas(max_walk_distance=500):
     for row in filtered_transfers.itertuples():
         net.add_edge(int(row.from_stop_I), int(row.to_stop_I), {"d_walk": row.d_walk})
     return net
+
 
 def _read_transfers_csv(max_walk_distance=500):
     import csv
@@ -120,7 +122,7 @@ def _compute_profile_data(target_stop_I=115):
     # csp = PseudoConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     csp = MultiObjectivePseudoCSAProfiler(connections, target_stop=target_stop_I,
                                           walk_network=net, walk_speed=walking_speed,
-                                          track_vehicle_legs=True, track_time=True, verbose=False)
+                                          track_vehicle_legs=True, track_time=True, verbose=True)
 
     # csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     print("CSA Profiler running...")
@@ -169,8 +171,7 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
 if __name__ == "__main__":
     # performance testing:
     orig_routing_end_time_dep = ROUTING_END_TIME_DEP
-    for i in range(1, 2):  # , 5):
+    for i in range(1, 5):  # , 5):
         ROUTING_END_TIME_DEP = ROUTING_START_TIME_DEP + i * 3600
         print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
         _compute_profile_data()
-        exit()
