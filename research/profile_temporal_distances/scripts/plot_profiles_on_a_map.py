@@ -15,7 +15,7 @@ import folium
 import pandas
 from jinja2 import Template
 
-from compute import get_node_profile_statistics
+from compute import get_node_profile_statistics, _targets_to_str
 
 from jinja2.environment import Environment
 from settings import HELSINKI_NODES_FNAME, DARK_TILES
@@ -23,42 +23,60 @@ from settings import RESULTS_DIRECTORY
 
 
 def main():
-    target_stop_Is = [115]  # , 3063] #kamppi, kilo
-    plotting_functions = [_plot_folium]  #, _plot_smopy]:
+    targets = [115, 3063]  # kamppi, kilo
+    plotting_functions = [_plot_smopy]  # plot_smopy]:
     nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
-    print(nodes)
-    for target_stop_I in target_stop_Is:
-        basename = RESULTS_DIRECTORY + "/helsinki_test_" + str(target_stop_I) + "_"
 
-        data = get_node_profile_statistics(target_stop_I)
-        observable_name_to_data = data
-        observable_names = sorted(list(observable_name_to_data.keys()))
+    data = get_node_profile_statistics(targets, recompute=True)
+    observable_name_to_data = data
+    observable_names = sorted(list(observable_name_to_data.keys()))
 
-        print("Producing figures")
-        for observable_name in observable_names:
-            observable_values = observable_name_to_data[observable_name]
-            # set up colors
-            if observable_name != "n_trips":
-                observable_values_to_plot = numpy.array(observable_values) / 60.0
-                norm = matplotlib.colors.Normalize(vmin=0, vmax=60)
-            else:
-                observable_values_to_plot = observable_values
-                norm = matplotlib.colors.Normalize(vmin=0, vmax=40)
-            cmap = matplotlib.cm.get_cmap(name="viridis_r", lut=None)
-            sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-            sm.set_array([norm.vmin, norm.vmax])
+    print("Producing figures")
+    basename = RESULTS_DIRECTORY + "/helsinki_test_" + _targets_to_str(targets) + "_"
+    for observable_name in observable_names:
+        print(observable_name)
+        observable_values = observable_name_to_data[observable_name]
+        # set up colors
+        cmap = matplotlib.cm.get_cmap(name="gnuplot2_r", lut=None) # prism, viridis_r
+        if observable_name == "n_trips":
+            observable_values_to_plot = observable_values
+            norm = matplotlib.colors.Normalize(vmin=0, vmax=max(observable_values))
+        elif "trip_n_veh_legs" in observable_name:
+            observable_values = numpy.array(observable_values)
+            new_max = numpy.nanmax(observable_values) + 1
+            nans = numpy.isnan(observable_values)
+            observable_values[nans] = float('inf')
+            observable_values_to_plot = observable_values
+            norm = matplotlib.colors.Normalize(vmin=0, vmax=new_max)
+        else:
+            observable_values_to_plot = numpy.array(observable_values) / 60.0
+            norm = matplotlib.colors.Normalize(vmin=0, vmax=60)
 
-            for plot_func in plotting_functions:
-                plot_func(nodes['lat'], nodes['lon'], observable_values_to_plot,
-                          observable_name, sm, basename, nodes['desc'])
+        sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+        sm.set_array([norm.vmin, norm.vmax])
 
-            print("Done with " + observable_name)
+        lats = nodes['lat']
+        lons = nodes['lon']
+        zipped = list(zip(observable_values_to_plot, lats, lons,
+                          [str(node) for node in nodes['desc']]))
+        zipped = reversed(sorted(zipped))
+        observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
+        observable_values_to_plot = numpy.array(observable_values_to_plot)
+        lats = numpy.array(lats)
+        lons = numpy.array(lons)
 
 
-def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar_mappable, basename, node_names):
+        for plot_func in plotting_functions:
+            plot_func(lats, lons, observable_values_to_plot,
+                      observable_name, sm, basename, node_desc)
+
+        print("Done with " + observable_name)
+
+
+def _plot_mplleafflet(lats, lons, observable_values_in_minutes, observable_name, scalar_mappable, basename, node_names):
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    colors = scalar_mappable.to_rgba(observable_values_min)
+    colors = scalar_mappable.to_rgba(observable_values_in_minutes)
 
     assert (isinstance(ax, matplotlib.axes.Axes))
     ax.scatter(lons, lats, c=colors, edgecolors=colors, s=10)
@@ -68,24 +86,26 @@ def _plot_mplleafflet(lats, lons, observable_values_min, observable_name, scalar
     mplleaflet.save_html(fig, basename + observable_name + ".html")
 
 
-def _plot_smopy(lats, lons, observable_values_min, observable_name, scalar_mappable, basename, node_names):
+def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scalar_mappable, basename, node_names):
     smopy_map = smopy.Map((lats.min(), lons.min(), lats.max(), lons.max()), z=10)
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10, 6), dpi=200)
     ax = fig.add_subplot(111)
     ax = smopy_map.show_mpl(figsize=(8, 6), ax=ax)
     xs, ys = smopy_map.to_pixels(lats, lons)
 
     ax.set_xlim(numpy.percentile(xs, 1), numpy.percentile(xs, 99))
     ax.set_ylim(numpy.percentile(ys, 99), numpy.percentile(ys, 1))
-    colors = scalar_mappable.to_rgba(observable_values_min)
+
+
+    colors = scalar_mappable.to_rgba(observable_values_in_minutes)
 
     assert(isinstance(ax, matplotlib.axes.Axes))
     ax.scatter(xs, ys, c=colors, edgecolors=colors, s=10)
     cbar = fig.colorbar(scalar_mappable)
 
     ax.set_title(observable_name)
-    fig.savefig(basename +  observable_name + ".pdf")
+    fig.savefig(basename + observable_name + ".png")
 
 
 def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable, basename, node_names):

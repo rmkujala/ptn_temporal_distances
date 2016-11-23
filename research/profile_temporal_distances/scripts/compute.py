@@ -5,6 +5,8 @@ import pickle
 
 import networkx
 
+from node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
+from node_profile_multiobjective import NodeProfileMultiObjective
 from routing.models import Connection
 from routing.node_profile_simple import NodeProfileSimple
 
@@ -16,9 +18,12 @@ from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIM
     ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP
 
 
+def _targets_to_str(targets):
+    targets_str = "_".join([str(target) for target in targets])
+    return targets_str
 
-def get_profile_data(target_stop_I=115, recompute=False):
-    node_profiles_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_" + str(target_stop_I) + ".pickle")
+def get_profile_data(targets=[115], recompute=False):
+    node_profiles_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_" + _targets_to_str(targets) + ".pickle")
     if not recompute and os.path.exists(node_profiles_fname):
         print("Loading precomputed data")
         profiles = pickle.load(open(node_profiles_fname, 'rb'))
@@ -26,15 +31,16 @@ def get_profile_data(target_stop_I=115, recompute=False):
         print("Loaded precomputed data")
     else:
         print("Recomputing profiles")
-        profiles = _compute_profile_data(target_stop_I)
+        profiles = _compute_profile_data(targets)
         pickle.dump(profiles, open(node_profiles_fname, 'wb'), -1)
         print("Recomputing profiles")
     return profiles
 
 
-def get_node_profile_statistics(target_stop_I, recompute=False, recompute_profiles=False):
+def get_node_profile_statistics(targets, recompute=False, recompute_profiles=False):
+
     profile_statistics_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_statistics_" +
-                                            str(target_stop_I) + ".pickle")
+                                            _targets_to_str(targets) + ".pickle")
     if recompute_profiles:
         recompute = True
     if not recompute and os.path.exists(profile_statistics_fname):
@@ -43,7 +49,7 @@ def get_node_profile_statistics(target_stop_I, recompute=False, recompute_profil
         print("Loaded precomputed statistics")
     else:
         print("Recomputing statistics")
-        observable_name_to_data = _compute_node_profile_statistics(target_stop_I, recompute_profiles)
+        observable_name_to_data = _compute_node_profile_statistics(targets, recompute_profiles)
         pickle.dump(observable_name_to_data, open(profile_statistics_fname, 'wb'), -1)
         print("Recomputed statistics")
     return observable_name_to_data
@@ -113,14 +119,14 @@ def _read_transfers_csv(max_walk_distance=500):
     return net
 
 
-def _compute_profile_data(target_stop_I=115):
+def _compute_profile_data(targests=[115]):
     max_walk_distance = 500
     walking_speed = 1.5
     connections = _read_connections_csv()
     net = _read_transfers_csv(max_walk_distance)
 
     # csp = PseudoConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
-    csp = MultiObjectivePseudoCSAProfiler(connections, target_stop=target_stop_I,
+    csp = MultiObjectivePseudoCSAProfiler(connections, targets=targests,
                                           walk_network=net, walk_speed=walking_speed,
                                           track_vehicle_legs=True, track_time=True, verbose=True)
 
@@ -131,7 +137,7 @@ def _compute_profile_data(target_stop_I=115):
     print("CSA profiler finished")
 
     parameters = {
-        "target_stop_I": target_stop_I,
+        "target_stop_I": targests,
         "walk_distance": max_walk_distance,
         "walking_speed": walking_speed
     }
@@ -142,12 +148,12 @@ def _compute_profile_data(target_stop_I=115):
     return profiles
 
 
-def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
-    from routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
+def _compute_node_profile_statistics(targets, recompute_profiles=False):
+    from routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
     import pandas
-    profile_summary_methods, profile_observable_names = NodeProfileAnalyzerTime.all_measures_and_names_as_lists()
+    profile_summary_methods, profile_observable_names = NodeProfileAnalyzerTimeAndVehLegs.all_measures_and_names_as_lists()
 
-    profile_data = get_profile_data(target_stop_I, recompute=recompute_profiles)['profiles']
+    profile_data = get_profile_data(targets, recompute=recompute_profiles)['profiles']
     profile_summary_data = [[] for _ in range(len(profile_observable_names))]
 
     observable_name_to_method = dict(zip(profile_observable_names, profile_summary_methods))
@@ -158,12 +164,15 @@ def _compute_node_profile_statistics(target_stop_I, recompute_profiles=False):
         try:
             profile = profile_data[stop_I]
         except KeyError:
-            profile = NodeProfileSimple()
-
-        profile_analyzer = NodeProfileAnalyzerTime(profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
+            profile = NodeProfileMultiObjective()
+            profile.finalize()
+        profile_analyzer = NodeProfileAnalyzerTimeAndVehLegs(profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
         for observable_name in profile_observable_names:
             method = observable_name_to_method[observable_name]
             observable_value = method(profile_analyzer)
+            if observable_value is None:
+                print(observable_name, stop_I)
+
             observable_name_to_data[observable_name].append(observable_value)
 
     return observable_name_to_data

@@ -13,7 +13,7 @@ from compute import get_profile_data
 from matplotlib import pyplot as plt
 
 target_stop_I = 115  # 3491  # Piispanaukio
-profile_data = get_profile_data(target_stop_I, recompute=False)
+profile_data = get_profile_data([target_stop_I], recompute=True)
 
 nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
 
