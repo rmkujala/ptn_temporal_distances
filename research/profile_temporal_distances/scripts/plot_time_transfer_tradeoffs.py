@@ -3,7 +3,7 @@ import pandas
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
+from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 
 from compute import get_profile_data
 from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP
