@@ -19,12 +19,12 @@ def main():
     max_n_veh_legs = 4
     for node, profile in profiles.items():
         analyzer = NodeProfileAnalyzerTimeAndVehLegs(profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
-        distances = analyzer.mean_temporal_distances(0, max_n_veh_legs)
+        distances = analyzer.median_temporal_distances(0, max_n_veh_legs)
         node_to_n_veh_leg_temporaldistances.append(distances)
         if ((numpy.array(distances) > 100000) * numpy.logical_not(numpy.isinf(numpy.array(distances)))).any():
             print(node, distances)
             analyzer = NodeProfileAnalyzerTimeAndVehLegs(profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
-            distances = analyzer.mean_temporal_distances(0, max_n_veh_legs)
+            distances = analyzer.median_temporal_distances(0, max_n_veh_legs)
     print("computed distances")
 
     node_to_n_veh_leg_temporaldistances = numpy.array(node_to_n_veh_leg_temporaldistances)
