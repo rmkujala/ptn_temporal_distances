@@ -5,18 +5,13 @@ import pickle
 
 import networkx
 
-from node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
-from node_profile_multiobjective import NodeProfileMultiObjective
-from routing.models import Connection
-from routing.node_profile_simple import NodeProfileSimple
+from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
+from gtfspy.routing.models import Connection
 
-from routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
-from routing.connection_scan_profile import ConnectionScanProfiler
-from routing.pseudo_connection_scan_profiler import PseudoConnectionScanProfiler
+from gtfspy.routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
 
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
     ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP
-
 
 def _targets_to_str(targets):
     targets_str = "_".join([str(target) for target in targets])

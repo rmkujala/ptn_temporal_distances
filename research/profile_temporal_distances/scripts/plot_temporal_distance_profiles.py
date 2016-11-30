@@ -4,10 +4,10 @@ Plot temporal distances based on pre-computed node-profiles
 import pandas
 import pytz
 
-from routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
-from routing.label import LabelTimeAndVehLegCount
-from routing.node_profile_multiobjective import NodeProfileMultiObjective
-from routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
+from gtfspy.routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
+from gtfspy.routing.label import LabelTimeAndVehLegCount
+from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
+from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP
 from compute import get_profile_data
 from matplotlib import pyplot as plt
