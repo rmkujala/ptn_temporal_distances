@@ -5,7 +5,7 @@ import pandas
 import pytz
 
 from gtfspy.routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
-from gtfspy.routing.label import LabelTimeAndVehLegCount
+from gtfspy.routing.label import LabelTimeWithBoardingsCount
 from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP
@@ -36,7 +36,7 @@ for from_stop_I in from_stop_Is:
     print(from_stop_I)
     from_stop_name = nodes[nodes["stop_I"] == from_stop_I]["name"].values[0]
     stop_profile = profiles[from_stop_I]
-    if isinstance(stop_profile, NodeProfileMultiObjective) and stop_profile.label_class == LabelTimeAndVehLegCount:
+    if isinstance(stop_profile, NodeProfileMultiObjective) and stop_profile.label_class == LabelTimeWithBoardingsCount:
         analyzer = NodeProfileAnalyzerTimeAndVehLegs(stop_profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
     else:
         analyzer = NodeProfileAnalyzerTime(stop_profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
