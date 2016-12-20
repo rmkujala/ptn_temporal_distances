@@ -13,12 +13,16 @@ from gtfspy.routing.multi_objective_pseudo_connection_scan_profiler import Multi
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
     ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP
 
-def _targets_to_str(targets):
+
+def target_list_to_str(targets):
     targets_str = "_".join([str(target) for target in targets])
     return targets_str
 
-def get_profile_data(targets=[115], recompute=False):
-    node_profiles_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_" + _targets_to_str(targets) + ".pickle")
+
+def get_profile_data(targets=None, recompute=False, **kwargs):
+    if targets is None:
+        targets = [115]
+    node_profiles_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_" + target_list_to_str(targets) + ".pickle")
     if not recompute and os.path.exists(node_profiles_fname):
         print("Loading precomputed data")
         profiles = pickle.load(open(node_profiles_fname, 'rb'))
@@ -26,7 +30,7 @@ def get_profile_data(targets=[115], recompute=False):
         print("Loaded precomputed data")
     else:
         print("Recomputing profiles")
-        profiles = _compute_profile_data(targets)
+        profiles = _compute_profile_data(targets, **kwargs)
         pickle.dump(profiles, open(node_profiles_fname, 'wb'), -1)
         print("Recomputing profiles")
     return profiles
@@ -35,7 +39,7 @@ def get_profile_data(targets=[115], recompute=False):
 def get_node_profile_statistics(targets, recompute=False, recompute_profiles=False):
 
     profile_statistics_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_statistics_" +
-                                            _targets_to_str(targets) + ".pickle")
+                                            target_list_to_str(targets) + ".pickle")
     if recompute_profiles:
         recompute = True
     if not recompute and os.path.exists(profile_statistics_fname):
@@ -114,16 +118,19 @@ def _read_transfers_csv(max_walk_distance=500):
     return net
 
 
-def _compute_profile_data(targests=[115]):
+def _compute_profile_data(targests=[115], track_vehicle_legs=True, track_time=True):
     max_walk_distance = 500
     walking_speed = 1.5
+    transfer_margin = 30
     connections = _read_connections_csv()
     net = _read_transfers_csv(max_walk_distance)
 
     # csp = PseudoConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     csp = MultiObjectivePseudoCSAProfiler(connections, targets=targests,
                                           walk_network=net, walk_speed=walking_speed,
-                                          track_vehicle_legs=True, track_time=True, verbose=True)
+                                          track_vehicle_legs=track_vehicle_legs,
+                                          track_time=track_time,
+                                          verbose=True, transfer_margin=transfer_margin)
 
     # csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     print("CSA Profiler running...")
@@ -134,7 +141,8 @@ def _compute_profile_data(targests=[115]):
     parameters = {
         "target_stop_I": targests,
         "walk_distance": max_walk_distance,
-        "walking_speed": walking_speed
+        "walking_speed": walking_speed,
+        "transfer_margin": transfer_margin
     }
 
     profiles = {"params": parameters,
