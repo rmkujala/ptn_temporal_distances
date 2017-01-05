@@ -4,7 +4,9 @@ import os
 import pickle
 
 import networkx
+import pandas
 
+from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
 from gtfspy.routing.models import Connection
 
@@ -118,15 +120,15 @@ def _read_transfers_csv(max_walk_distance=500):
     return net
 
 
-def _compute_profile_data(targests=[115], track_vehicle_legs=True, track_time=True):
-    max_walk_distance = 500
-    walking_speed = 1.5
-    transfer_margin = 30
+def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=True):
+    max_walk_distance = 1000
+    walking_speed = 70 / 60.0
+    transfer_margin = 180
     connections = _read_connections_csv()
     net = _read_transfers_csv(max_walk_distance)
 
     # csp = PseudoConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
-    csp = MultiObjectivePseudoCSAProfiler(connections, targets=targests,
+    csp = MultiObjectivePseudoCSAProfiler(connections, targets=targets,
                                           walk_network=net, walk_speed=walking_speed,
                                           track_vehicle_legs=track_vehicle_legs,
                                           track_time=track_time,
@@ -139,7 +141,7 @@ def _compute_profile_data(targests=[115], track_vehicle_legs=True, track_time=Tr
     print("CSA profiler finished")
 
     parameters = {
-        "target_stop_I": targests,
+        "target_stop_I": targets,
         "walk_distance": max_walk_distance,
         "walking_speed": walking_speed,
         "transfer_margin": transfer_margin
@@ -152,8 +154,6 @@ def _compute_profile_data(targests=[115], track_vehicle_legs=True, track_time=Tr
 
 
 def _compute_node_profile_statistics(targets, recompute_profiles=False):
-    from routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
-    import pandas
     profile_summary_methods, profile_observable_names = NodeProfileAnalyzerTimeAndVehLegs.all_measures_and_names_as_lists()
 
     profile_data = get_profile_data(targets, recompute=recompute_profiles)['profiles']

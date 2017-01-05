@@ -9,11 +9,14 @@ from gtfspy.routing.label import LabelTimeWithBoardingsCount
 from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP
+from settings import OTANIEMI_STOP_ID, ITAKESKUS_STOP_ID, MUNKKIVUORI_STOP_ID
 from compute import get_profile_data
 from matplotlib import pyplot as plt
 
-target_stop_I = 3373
+target_stop_I = OTANIEMI_STOP_ID
+# Some old ones:
 # 3373 Innopoli | Pasila 532 | Kamppi 115 | Piispanaukio 3491
+
 profile_data = get_profile_data([target_stop_I], recompute=False, track_vehicle_legs=True)
 
 nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
@@ -28,14 +31,22 @@ from_stop_Is = [
     # 5935,   # Sorvatie
     # 3101,   # lahderannanristi
     # 3373,     # Innopoli
-    2843      # Vallikatu (Pohjois-Leppavaara)
+    # 2843      # Vallikatu (Pohjois-Leppavaara)
+    ITAKESKUS_STOP_ID,
+    MUNKKIVUORI_STOP_ID
 ]
 
 timezone = pytz.timezone("Europe/Helsinki")
 
 target_stop_name = nodes[nodes["stop_I"] == target_stop_I]["name"].values[0]
-for from_stop_I in from_stop_Is:
+
+fig1 = plt.figure(figsize=(11, 4))
+
+fig1_fname = u"../results/" + target_stop_name + "_from_"
+
+for i, from_stop_I in enumerate(from_stop_Is):
     from_stop_name = nodes[nodes["stop_I"] == from_stop_I]["name"].values[0]
+
     stop_profile = profiles[from_stop_I]
     if isinstance(stop_profile, NodeProfileMultiObjective) and stop_profile.label_class == LabelTimeWithBoardingsCount:
         analyzer = NodeProfileAnalyzerTimeAndVehLegs(stop_profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
@@ -43,30 +54,34 @@ for from_stop_I in from_stop_Is:
     else:
         analyzer = NodeProfileAnalyzerTime(stop_profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)
 
-    for show_stats in ["trip", "tdist", None]:
-        plot_tdist_stats = False
-        plot_trip_stats = False
+    plot_tdist_stats = True
 
-        fname = u"../results/" + from_stop_name + "_to_" + target_stop_name + "_fastest"
-        if show_stats == "trip":
-            plot_trip_stats = True
-            fname += u"_trip_stats"
-        elif show_stats == "tdist":
-            plot_tdist_stats = True
-            fname += u"_tdist_stats"
-        fname += u".pdf"
+    ax1 = fig1.add_subplot(1, 2, i + 1)
+    fig1 = analyzer.plot_fastest_temporal_distance_profile(timezone=timezone,
+                                                           plot_tdist_stats=plot_tdist_stats,
+                                                           format_string="%H:%M",
+                                                           ax=ax1)
+    ax1.set_ylim(0, 60)
+    ax1.legend(loc="best", prop={'size': 12})
 
-        fig = analyzer.plot_fastest_temporal_distance_profile(timezone=timezone,
-                                                              plot_tdist_stats=plot_tdist_stats,
-                                                              plot_trip_stats=plot_trip_stats)
-        ax = fig.get_axes()[0]
-        ax.set_title(u"From " + from_stop_name + u" to " + target_stop_name)
-        fig.savefig(fname)
+    ax1.set_title(u"From " + from_stop_name + u" to " + target_stop_name)
+    fig1_fname += from_stop_name + "_"
+
+    if i == len(from_stop_Is) - 1:
+        fig1_fname += "_fastest"
+        fig1_fname += u"_trip_stats"
+        fig1_fname += u".pdf"
+        fig1.tight_layout()
+        fig1.savefig(fig1_fname)
 
     fname = u"../results/" + from_stop_name + "_to_" + target_stop_name + ".pdf"
-    fig = analyzer.plot_temporal_distance_variation(timezone=timezone)
-    ax = fig.get_axes()[0]
+    fig = plt.figure(figsize=(6,4))
+    ax = fig.add_subplot(111)
+    analyzer.plot_new_transfer_temporal_distance_profile(timezone=timezone,
+                                                         format_string="%H:%M",
+                                                         ax=ax)
+    fig1.tight_layout()
     ax.set_title(u"From " + from_stop_name + u" to " + target_stop_name)
     fig.savefig(fname)
 
-    plt.show()
+plt.show()
