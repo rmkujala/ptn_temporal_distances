@@ -24,7 +24,7 @@ def task_copy_extracts():
             "name": city + "/" + date,
             "actions": ["mkdir -p " + os.path.join(DATA_DIRECTORY, city, date),
                         "scp "
-                        "cswork:/m/cs/scratch/networks/rmkujala/transit/proc_test/" + city + "/" + date + "/*.csv " +
+                        "cswork:/m/cs/scratch/networks/rmkujala/transit/proc_test/" + city + "/" + date + "/*.csv" +
                         city_date_data_directory],
             "targets": targets,
             'uptodate': [run_once]
