@@ -33,6 +33,17 @@ def run_in_parallel(work_func, arg_list, n_cpus, chunksize=1):
     return result_list
 
 
+def split_into_equal_length_parts(array, n_splits):
+    # http://stackoverflow.com/questions/2130016/splitting-a-list-of-arbitrary-size-into-only-roughly-n-equal-parts
+    # pretty nice :)
+    a = array
+    n = n_splits
+    k, m = divmod(len(a), n)
+    lists = [a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
+    assert(lists[0][0] == array[0])
+    assert(lists[-1][-1] == array[-1])
+    return lists
+
 def get_data_or_compute(fname, comp_func, recompute=False, *args, **kwargs):
     """
     Parameters
