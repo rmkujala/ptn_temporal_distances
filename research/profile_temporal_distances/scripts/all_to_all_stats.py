@@ -5,11 +5,14 @@ import fnmatch
 import pickle
 
 import numpy
+import pandas
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 from compute import compute_all_to_all_profile_statistics_with_defaults
-from settings import RESULTS_DIRECTORY
+from settings import RESULTS_DIRECTORY, HELSINKI_NODES_FNAME
+from util import run_in_parallel
 
 
 def analyze():
@@ -55,9 +58,19 @@ def analyze():
     plt.show()
 
 
+def chunk_a_list(list, chunksize):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(list), chunksize):
+        yield list[i:i + chunksize]
+
+
 if __name__ == "__main__":
-    compute_all_to_all_profile_statistics_with_defaults()
-    analyze()
+    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)['stop_I'].values
+    args = list(chunk_a_list(nodes, 20))
+    run_in_parallel(compute_all_to_all_profile_statistics_with_defaults, args, 4)
+
+    # compute_all_to_all_profile_statistics_with_defaults()
+    # analyze()
 
 
 

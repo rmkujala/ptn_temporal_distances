@@ -121,7 +121,7 @@ def _read_transfers_csv(max_walk_distance=500):
     return net
 
 
-def _get_new_csp(targets=None, params=None):
+def _get_new_csp(targets=None, params=None, verbose=True):
     if "routing_start_time_dep" not in params or params["routing_start_time_dep"] is None:
         params["routing_start_time_dep"] = ROUTING_START_TIME_DEP
     if "routing_end_time_dep" not in params or params["routing_end_time_dep"] is None:
@@ -153,14 +153,14 @@ def _get_new_csp(targets=None, params=None):
         walk_speed=params["walking_speed"],
         track_vehicle_legs=params["track_vehicle_legs"],
         track_time=params["track_time"],
-        verbose=True,
+        verbose=verbose,
         transfer_margin=params["transfer_margin"]
     )
     return csp, params
 
 def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=True,
                           routing_start_time_dep=None, routing_end_time_dep=None,
-                          csp=None):
+                          csp=None, verbose=True):
     """
     Compute profile data
 
@@ -188,7 +188,7 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
             "routing_start_time_dep": routing_start_time_dep,
             "routing_end_time_dep": routing_end_time_dep,
         }
-        csp, params = _get_new_csp(targets=targets, params=params)
+        csp, params = _get_new_csp(targets=targets, params=params, verbose=verbose)
     else:
         csp.reset(targets)
 
@@ -256,14 +256,15 @@ def _assert_results_are_positive_if_not_infs_or_nans(value):
     is_not_negative = value >= 0
     assert (is_nan or is_inf or is_not_negative)
 
-def compute_all_to_all_profile_statistics_with_defaults(target_Is=None):
+
+def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=False):
     nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
     csp = None
     if target_Is is None:
         target_Is = nodes['stop_I']
     for i, target_I in enumerate(target_Is):
         print(target_I, i, "/", len(target_Is))
-        data, csp = _compute_profile_data([target_I], csp=csp)
+        data, csp = _compute_profile_data([target_I], csp=csp, verbose=verbose)
         obs_name_to_data = __compute_profile_stats_from_profiles(data["profiles"])
         fname = os.path.join(RESULTS_DIRECTORY + "all_to_all_stats_target_{target}.pkl".format(target=str(target_I)))
         to_store = {
