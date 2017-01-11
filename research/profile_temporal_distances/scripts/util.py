@@ -44,6 +44,13 @@ def split_into_equal_length_parts(array, n_splits):
     assert(lists[-1][-1] == array[-1])
     return lists
 
+def make_filename_nice(fname):
+    fname = fname.replace(" ", "_")
+    fname = fname.replace("'", "")
+    fname = fname.replace("ä", "a")
+    fname = fname.replace("ö", "o")
+    return fname
+
 def get_data_or_compute(fname, comp_func, recompute=False, *args, **kwargs):
     """
     Parameters

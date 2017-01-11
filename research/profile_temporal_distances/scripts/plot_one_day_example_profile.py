@@ -30,9 +30,11 @@ npa.plot_new_transfer_temporal_distance_profile(timezone=settings.TIMEZONE,
                                                 format_string="%H:%M",
                                                 plot_journeys=False,
                                                 ax=ax,
-                                                highlight_fastest_path=False)
+                                                highlight_fastest_path=False,
+                                                default_lw=1.5,
+                                                ncol_legend=1)
 
 fig.tight_layout()
 fig.savefig(os.path.join(settings.RESULTS_DIRECTORY, "long_profile_with_transfers.pdf"))
 
-
+plt.show()

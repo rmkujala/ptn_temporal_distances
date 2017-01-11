@@ -398,7 +398,7 @@ def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scala
                                numpy.percentile(lons, 5),
                                numpy.percentile(lons, 95),
                                z=10)
-    ax = smopy_map.show_mpl(figsize=(12, 8), ax=ax, alpha=0.9)
+    ax = smopy_map.show_mpl(figsize=(12, 8), ax=ax, alpha=0.8)
     xs, ys = smopy_map.to_pixels(lats, lons)
     ax.set_xticks([])
     ax.set_yticks([])
@@ -443,6 +443,6 @@ def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable
 
 
 if __name__ == "__main__":
-    plot_transfers()
-    # plot_temporal_distances_draft()
+    # plot_transfers()
+    plot_temporal_distances_draft()
     # plot_temporal_distances()

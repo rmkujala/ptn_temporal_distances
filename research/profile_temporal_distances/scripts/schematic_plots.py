@@ -25,7 +25,6 @@ def plot_plain_profile():
                                                   plot_journeys=True,
                                                   lw=3,
                                                   plot_tdist_stats=True,
-                                                  color="blue",
                                                   alpha=0.15,
                                                   plot_trip_stats=False,
                                                   duration_divider=60.0)
@@ -81,6 +80,7 @@ def plot_transfer_profile():
     fig = analyzer.plot_new_transfer_temporal_distance_profile(format_string="%S",
                                                                duration_divider=1,
                                                                default_lw=4)
+
     ax = fig.get_axes()[0]
     ax.set_xlabel("Departure time (min)")
     ax.set_ylabel("Temporal distance (min)")
@@ -89,5 +89,5 @@ def plot_transfer_profile():
 
 
 if __name__ == "__main__":
-    # plot_plain_profile()
+    plot_plain_profile()
     plot_transfer_profile()
