@@ -4,6 +4,7 @@ import os
 import pickle
 
 import networkx
+import numpy
 import pandas
 
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
@@ -70,7 +71,7 @@ def _read_connections_pandas():
     return connections
 
 
-def _read_connections_csv():
+def _read_connections_csv(routing_start_time, routing_end_time):
     import csv
     # header: from_stop_I, to_stop_I, dep_time_ut, arr_time_ut, route_type, route_id, trip_I, seq
     from_node_index = 0
@@ -85,7 +86,7 @@ def _read_connections_csv():
             break
         for row in events_reader:
             dep_time = int(row[dep_time_index])
-            if ROUTING_END_TIME_DEP >= dep_time >= ROUTING_START_TIME_DEP:
+            if routing_start_time <= dep_time <= routing_end_time:
                 connections.append(Connection(int(row[from_node_index]), int(row[to_node_index]), int(row[dep_time_index]),
                                               int(row[arr_time_index]), int(row[trip_I_index])))
     connections = sorted(connections, key=lambda conn: -conn.departure_time)
@@ -120,23 +121,78 @@ def _read_transfers_csv(max_walk_distance=500):
     return net
 
 
-def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=True):
+def _get_new_csp(targets=None, params=None, verbose=True):
+    if "routing_start_time_dep" not in params or params["routing_start_time_dep"] is None:
+        params["routing_start_time_dep"] = ROUTING_START_TIME_DEP
+    if "routing_end_time_dep" not in params or params["routing_end_time_dep"] is None:
+        params['routing_end_time_dep'] = ROUTING_END_TIME_DEP
+
+    connections = _read_connections_csv(
+        params["routing_start_time_dep"],
+        params["routing_end_time_dep"]
+    )
+    if targets is None:
+        targets = [connections[0].departure_stop]
+
+    if "max_walk_distance" not in params:
+        params["max_walk_distance"] = 1000
+    net = _read_transfers_csv(params["max_walk_distance"])
+    if "track_time" not in params:
+        params["track_time"] = True
+    if "track_vehicle_legs" not in params:
+        params["track_time"] = True
+    if "transfer_margin" not in params:
+        params["transfer_margin"] = 180
+    if "walking_speed" not in params:
+        params["walking_speed"] = 70 / 60.0
+
+    csp = MultiObjectivePseudoCSAProfiler(
+        connections,
+        targets,
+        walk_network=net,
+        walk_speed=params["walking_speed"],
+        track_vehicle_legs=params["track_vehicle_legs"],
+        track_time=params["track_time"],
+        verbose=verbose,
+        transfer_margin=params["transfer_margin"]
+    )
+    return csp, params
+
+def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=True,
+                          routing_start_time_dep=None, routing_end_time_dep=None,
+                          csp=None, verbose=True):
+    """
+    Compute profile data
+
+    Parameters
+    ----------
+    targets
+    track_vehicle_legs
+    track_time
+    routing_start_time_dep
+    routing_end_time_dep
+    csp: connection scan profiler instance
+        targests are used to reset it
+
+    Returns
+    -------
+
+    """
     max_walk_distance = 1000
     walking_speed = 70 / 60.0
     transfer_margin = 180
-    connections = _read_connections_csv()
-    net = _read_transfers_csv(max_walk_distance)
+    if csp is None:
+        params = {
+            "track_vehicle_legs": track_vehicle_legs,
+            "track_time": track_time,
+            "routing_start_time_dep": routing_start_time_dep,
+            "routing_end_time_dep": routing_end_time_dep,
+        }
+        csp, params = _get_new_csp(targets=targets, params=params, verbose=verbose)
+    else:
+        csp.reset(targets)
 
-    # csp = PseudoConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
-    csp = MultiObjectivePseudoCSAProfiler(connections, targets=targets,
-                                          walk_network=net, walk_speed=walking_speed,
-                                          track_vehicle_legs=track_vehicle_legs,
-                                          track_time=track_time,
-                                          verbose=True, transfer_margin=transfer_margin)
-
-    # csp = ConnectionScanProfiler(connections, target_stop=target_stop_I, walk_network=net, walk_speed=walking_speed)
     print("CSA Profiler running...")
-    print(len(csp._all_connections))
     csp.run()
     print("CSA profiler finished")
 
@@ -150,13 +206,28 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
     profiles = {"params": parameters,
                 "profiles": dict(csp.stop_profiles)
     }
-    return profiles
+    return profiles, csp
 
 
 def _compute_node_profile_statistics(targets, recompute_profiles=False):
-    profile_summary_methods, profile_observable_names = NodeProfileAnalyzerTimeAndVehLegs.all_measures_and_names_as_lists()
-
     profile_data = get_profile_data(targets, recompute=recompute_profiles)['profiles']
+    return __compute_profile_stats_from_profiles(profile_data)
+
+
+
+
+def __compute_profile_stats_from_profiles(profile_data):
+    """
+
+    Parameters
+    ----------
+    profiles: dict
+        mapping from stop_I -> MultiObjectiveNodeProfile
+
+    Returns
+    -------
+    """
+    profile_summary_methods, profile_observable_names = NodeProfileAnalyzerTimeAndVehLegs.all_measures_and_names_as_lists()
     profile_summary_data = [[] for _ in range(len(profile_observable_names))]
 
     observable_name_to_method = dict(zip(profile_observable_names, profile_summary_methods))
@@ -175,10 +246,35 @@ def _compute_node_profile_statistics(targets, recompute_profiles=False):
             observable_value = method(profile_analyzer)
             if observable_value is None:
                 print(observable_name, stop_I)
-
+            _assert_results_are_positive_if_not_infs_or_nans(observable_value)
             observable_name_to_data[observable_name].append(observable_value)
-
     return observable_name_to_data
+
+def _assert_results_are_positive_if_not_infs_or_nans(value):
+    is_nan = numpy.isnan(value)
+    is_inf = numpy.isinf(value)
+    is_not_negative = value >= 0
+    assert (is_nan or is_inf or is_not_negative)
+
+
+def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=False):
+    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
+    csp = None
+    if target_Is is None:
+        target_Is = nodes['stop_I']
+    for i, target_I in enumerate(target_Is):
+        print(target_I, i, "/", len(target_Is))
+        data, csp = _compute_profile_data([target_I], csp=csp, verbose=verbose)
+        obs_name_to_data = __compute_profile_stats_from_profiles(data["profiles"])
+        fname = os.path.join(RESULTS_DIRECTORY + "all_to_all_stats_target_{target}.pkl".format(target=str(target_I)))
+        to_store = {
+            "target": target_I,
+            "params": data["params"],
+            "stats": obs_name_to_data
+        }
+        with open(fname, "wb") as f:
+            pickle.dump(to_store, f, -1)
+
 
 if __name__ == "__main__":
     # performance testing:

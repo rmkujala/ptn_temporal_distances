@@ -46,7 +46,7 @@ def plot_time_lost():
 if __name__ == "__main__":
     target_stop_I_s = 3063,  # [115, 3063]  # kamppi + kilo
     for target_stop_I in target_stop_I_s:
-        observable_name_to_data = get_node_profile_statistics([target_stop_I], recompute=True)
+        observable_name_to_data = get_node_profile_statistics([target_stop_I], recompute=True, recompute_profiles=True)
         df = pandas.DataFrame.from_dict(observable_name_to_data)
 
         nodes_df = pandas.read_csv(settings.HELSINKI_NODES_FNAME)
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         profile_observable_names = [el for i, el in enumerate(all_profile_observable_names) if i in [0, 1, 2, 3, 4]]
         # plot_time_measure_dependencies()
         # plot_counts_vs_time_measures()
-        plot_time_lost()
+        # plot_time_lost()
 
 
 
