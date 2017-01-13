@@ -1,3 +1,4 @@
+# -*- coding: latin-1 -*-
 import pytz
 
 RESULTS_DIRECTORY = "../results/"
