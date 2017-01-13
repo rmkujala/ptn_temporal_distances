@@ -1,5 +1,3 @@
-import os
-
 import matplotlib
 import matplotlib.cm
 import matplotlib.colors
@@ -9,6 +7,7 @@ import numpy
 import smopy
 
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
+from util import _get_smopy_map
 
 smopy.TILE_SERVER = "http://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
 # smopy.TILE_SERVER = "http://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
@@ -109,11 +108,14 @@ def plot_max_minux_min_per_mean_minus_min():
 def plot_temporal_distances_draft():
     targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
     nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
-    data = get_node_profile_statistics(targets, recompute=False, recompute_profiles=False)
+    print(len(nodes))
+    data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=True)
     observable_name_to_data = data
     min_temporal_distances = numpy.array(data["min_temporal_distance"])
     mean_temporal_distances = numpy.array(data["mean_temporal_distance"])
     max_temporal_distances = numpy.array(data["max_temporal_distance"])
+    print(len(min_temporal_distances))
+    assert(len(min_temporal_distances) == len(nodes))
 
     observable_name_to_data["max_minus_min_temporal_distance"] = max_temporal_distances - min_temporal_distances
     observable_name_to_data["max_minus_mean_temporal_distance"] = max_temporal_distances - mean_temporal_distances
@@ -276,6 +278,8 @@ def plot_temporal_distances():
     nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
     data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=False)
     observable_name_to_data = data
+
+
     min_temporal_distances = numpy.array(data["min_temporal_distance"])
     mean_temporal_distances = numpy.array(data["mean_temporal_distance"])
     max_temporal_distances = numpy.array(data["max_temporal_distance"])
@@ -288,6 +292,7 @@ def plot_temporal_distances():
     observable_name_to_data["max_minus_min_per_min"] = (max_temporal_distances - min_temporal_distances) / min_temporal_distances
     observable_name_to_data["mean_minus_min_per_min"] = (mean_temporal_distances - min_temporal_distances) / min_temporal_distances
     observable_name_to_data["max_minus_min_per_min_per_mean_minus_min"] = (max_temporal_distances - min_temporal_distances) / (mean_temporal_distances - min_temporal_distances)
+
 
     print("Producing figures")
     basename = RESULTS_DIRECTORY + "/helsinki_test_" + target_list_to_str(targets) + "_"
@@ -378,18 +383,10 @@ def _plot_mplleafflet(lats, lons, observable_values_in_minutes, observable_name,
     mplleaflet.save_html(fig, basename + observable_name + ".html")
 
 
-def _get_smopy_map(lat_min, lat_max, lon_min, lon_max, z):
-    if _get_smopy_map.map is None:
-        smopy.Map.get_allowed_zoom = lambda self, z: z
-        _get_smopy_map.map = smopy.Map((lat_min, lon_min, lat_max, lon_max), z=z)
-    return _get_smopy_map.map
-
-
-_get_smopy_map.map = None
 
 
 def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scalar_mappable, basename, node_names,
-                ax=None):
+                ax=None, return_smopy_map=False):
     if ax is None:
         fig = plt.figure()  # figsize=(12, 8), dpi=300)
         ax = fig.add_subplot(111)
@@ -406,14 +403,17 @@ def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scala
     ax.set_xlim(numpy.percentile(xs, 5), numpy.percentile(xs, 95))
     ax.set_ylim(numpy.percentile(ys, 98), numpy.percentile(ys, 6))
 
-
     colors = scalar_mappable.to_rgba(observable_values_in_minutes)
 
     assert (isinstance(ax, matplotlib.axes.Axes))
     valids = observable_values_in_minutes < float('inf')
     ax.scatter(xs[valids], ys[valids], c=colors[valids], edgecolors=colors[valids], s=12)
-    ax.set_title(observable_name)
-    return ax
+    if observable_name:
+        ax.set_title(observable_name)
+    if return_smopy_map:
+        return ax, smopy_map
+    else:
+        return ax
 
 
 def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable, basename, node_names):

@@ -2,6 +2,8 @@
 import pickle
 import multiprocessing
 
+import smopy
+
 
 def run_in_parallel(work_func, arg_list, n_cpus, chunksize=1):
     """
@@ -52,7 +54,14 @@ def make_filename_nice(fname):
     fname = fname.replace("ö", "o")
     return fname
 
-def get_data_or_compute(fname, comp_func, recompute=False, *args, **kwargs):
+def make_string_latex_friendly(fname):
+    fname = fname.replace("_", "\\_")
+    fname = fname.replace("'", "")
+    fname = fname.replace("ä", '\\"a')
+    fname = fname.replace("ö", '\\"o')
+    return fname
+
+def get_data_or_compute(fname, comp_func, *args, recompute=False, **kwargs):
     """
     Parameters
     ----------
@@ -77,9 +86,18 @@ def get_data_or_compute(fname, comp_func, recompute=False, *args, **kwargs):
             raise RuntimeError("Recompute!")
         with open(fname, "rb") as f:
             data = pickle.load(f)
-    except (RuntimeError, TypeError, EOFError) as e:
+    except (RuntimeError, TypeError, EOFError, IOError) as e:
         print(e)
         with open(fname, "wb") as f:
             data = comp_func(*args, **kwargs)
             pickle.dump(data, f, -1)
     return data
+
+
+def _get_smopy_map(lat_min, lat_max, lon_min, lon_max, z):
+    args = (lat_min, lat_max, lon_min, lon_max, z)
+    if args not in _get_smopy_map.maps:
+        smopy.Map.get_allowed_zoom = lambda self, z: z
+        _get_smopy_map.maps[args] = smopy.Map((lat_min, lon_min, lat_max, lon_max), z=z)
+    return _get_smopy_map.maps[args]
+_get_smopy_map.maps = {}
