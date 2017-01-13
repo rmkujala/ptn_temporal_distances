@@ -1,0 +1,2 @@
+sbatch -p short script.sh
+# other options for -p (partition) : batch, debug
