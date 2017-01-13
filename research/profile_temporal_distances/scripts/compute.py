@@ -267,7 +267,12 @@ def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=
         target_Is = nodes['stop_I']
     for i, target_I in enumerate(target_Is):
         print(target_I, i, "/", len(target_Is))
-        data, csp = _compute_profile_data([target_I], csp=csp, verbose=verbose, return_profiler=True)
+
+        try:
+            data, csp = _compute_profile_data([target_I], csp=csp, verbose=verbose, return_profiler=True)
+        except AssertionError as e:
+            continue
+
         obs_name_to_data = __compute_profile_stats_from_profiles(data["profiles"])
         fname = os.path.join(RESULTS_DIRECTORY + "all_to_all_stats_target_{target}.pkl".format(target=str(target_I)))
         to_store = {
