@@ -33,7 +33,7 @@ def get_profile_data(targets=None, recompute=False, **kwargs):
         print("Loaded precomputed data")
     else:
         print("Recomputing profiles")
-        profiles = _compute_profile_data(targets, **kwargs)
+        profiles = _compute_profile_data(targets, return_profiler=False, **kwargs)
         pickle.dump(profiles, open(node_profiles_fname, 'wb'), -1)
         print("Recomputing profiles")
     return profiles
@@ -160,7 +160,7 @@ def _get_new_csp(targets=None, params=None, verbose=True):
 
 def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=True,
                           routing_start_time_dep=None, routing_end_time_dep=None,
-                          csp=None, verbose=True):
+                          csp=None, verbose=True, return_profiler=False):
     """
     Compute profile data
 
@@ -206,7 +206,9 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
     profiles = {"params": parameters,
                 "profiles": dict(csp.stop_profiles)
     }
-    return profiles, csp
+    if return_profiler:
+        return profiles, csp
+    return profiles
 
 
 def _compute_node_profile_statistics(targets, recompute_profiles=False):
@@ -226,6 +228,7 @@ def __compute_profile_stats_from_profiles(profile_data):
 
     Returns
     -------
+    observable_name_to_data: dict
     """
     profile_summary_methods, profile_observable_names = NodeProfileAnalyzerTimeAndVehLegs.all_measures_and_names_as_lists()
     profile_summary_data = [[] for _ in range(len(profile_observable_names))]
@@ -264,7 +267,12 @@ def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=
         target_Is = nodes['stop_I']
     for i, target_I in enumerate(target_Is):
         print(target_I, i, "/", len(target_Is))
-        data, csp = _compute_profile_data([target_I], csp=csp, verbose=verbose)
+
+        try:
+            data, csp = _compute_profile_data([target_I], csp=csp, verbose=verbose, return_profiler=True)
+        except AssertionError as e:
+            continue
+
         obs_name_to_data = __compute_profile_stats_from_profiles(data["profiles"])
         fname = os.path.join(RESULTS_DIRECTORY + "all_to_all_stats_target_{target}.pkl".format(target=str(target_I)))
         to_store = {

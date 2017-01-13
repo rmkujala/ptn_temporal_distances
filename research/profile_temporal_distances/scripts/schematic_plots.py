@@ -20,25 +20,41 @@ def plot_plain_profile():
         profile.update_pareto_optimal_tuples(
             LabelTimeSimple(departure_time=label[0] * 60, arrival_time_target=label[1] * 60)
         )
+
     analyzer = NodeProfileAnalyzerTime(profile, 10 * 60, 20 * 60)
+    fig = plt.figure(figsize=(8, 4))
+    subplot_grid = (1, 6)
+    ax1 = plt.subplot2grid(subplot_grid, (0, 0), colspan=4, rowspan=1)
     fig = analyzer.plot_temporal_distance_profile(format_string="%M",
                                                   plot_journeys=True,
                                                   lw=3,
+                                                  ax=ax1,
                                                   plot_tdist_stats=True,
                                                   alpha=0.15,
                                                   plot_trip_stats=False,
                                                   duration_divider=60.0)
-    ax = fig.get_axes()[0]
-    ax.set_ylim(0, 11)
-    #
-    ax.set_xlabel("Departure time (min)")
-    fig.tight_layout()
-    handles, labels = ax.get_legend_handles_labels()
+
+    ax2 = plt.subplot2grid(subplot_grid, (0, 4), colspan=2, rowspan=1)
+    fig = analyzer.plot_temporal_distance_pdf_horizontal(use_minutes=True,
+                                                         ax=ax2)
+
+    ax2.set_ylabel("")
+    ax2.set_yticks([])
+
+    ax1.set_ylim(0, 11)
+    ax2.set_ylim(0, 11)
+
+    ax1.set_xlabel("Departure time $t_{\\text{dep}}$ (min)")
+    ax1.set_ylabel("Temporal distance $\\tau$ (min)")
+
+    handles, labels = ax1.get_legend_handles_labels()
     # legend_order = [4, 3, 0, 1, 2]
     # handles = [handles[order] for order in legend_order]
     # labels = [labels[order] for order in legend_order]
-    ax.legend(handles, labels, loc="lower center",
-              fancybox=True, ncol=2, shadow=True, prop={'size': 14})
+    ax1.legend(handles, labels, loc="lower center",
+              fancybox=False, ncol=2, shadow=False, prop={'size': 10})
+    fig.tight_layout()
+    plt.subplots_adjust(wspace=0.34)
     fig.savefig(settings.RESULTS_DIRECTORY + "schematic_temporal_distance.pdf")
     plt.show()
 
@@ -73,6 +89,7 @@ def plot_transfer_profile():
 
     for label in labels[::-1]:
         p.update([label])
+
     p.finalize()
     analyzer = NodeProfileAnalyzerTimeAndVehLegs(p, 0, 20)
     print(analyzer.mean_n_boardings_on_shortest_paths())
@@ -82,12 +99,12 @@ def plot_transfer_profile():
                                                                default_lw=4)
 
     ax = fig.get_axes()[0]
-    ax.set_xlabel("Departure time (min)")
-    ax.set_ylabel("Temporal distance (min)")
+    ax.set_xlabel("Departure time $t_{\text{dep}}$ (min)")
+    ax.set_ylabel("Temporal distance $\tau$ (min)")
     fig.savefig(settings.RESULTS_DIRECTORY + "schematic_transfer_profile.pdf")
     plt.show()
 
 
 if __name__ == "__main__":
     plot_plain_profile()
-    plot_transfer_profile()
+    # plot_transfer_profile()
