@@ -1,5 +1,5 @@
+# -*- coding: latin-1 -*-
 import os
-
 import pytz
 
 RESULTS_DIRECTORY = "../results/"
@@ -24,7 +24,7 @@ OTANIEMI_STOP_ID = 3363
 # 3363,2222211,E2229,Alvar Aallon puisto,Otaniementie,60.183984,24.829145,,0,0,3363
 
 ITAKESKUS_STOP_ID = 2179
-# 2179,1453601,0023,It√§keskus,It√§keskus,60.209989,25.077984,7534.0,0,0,7534
+# 2179,1453601,0023,It‰keskus,It‰keskus,60.209989,25.077984,7534.0,0,0,7534
 
 MUNKKIVUORI_STOP_ID = 1161
 # 1161,1304137,1396,Munkkivuori,Huopalahdentie,60.20595,24.87998,,0,2,1161
