@@ -96,24 +96,16 @@ def plot_transfers():
     fig.savefig(RESULTS_DIRECTORY + "transfers-on-map.pdf")
 
 
-def plot_max_minux_min_per_mean_minus_min():
-    targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
-    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
-    data = get_node_profile_statistics(targets, recompute=False, recompute_profiles=False)
-    observable_name_to_data = data
-    observable_name_to_data["max_minus_min_per_min_per_mean_minus_min"] = \
-        (max_temporal_distances - min_temporal_distances) / (mean_temporal_distances - min_temporal_distances)
-
-
 def plot_temporal_distances_draft():
     targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
     nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
     print(len(nodes))
-    data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=True)
+    data = get_node_profile_statistics(targets, recompute=False, recompute_profiles=False)
     observable_name_to_data = data
     min_temporal_distances = numpy.array(data["min_temporal_distance"])
     mean_temporal_distances = numpy.array(data["mean_temporal_distance"])
     max_temporal_distances = numpy.array(data["max_temporal_distance"])
+    print(list(sorted(numpy.unique(numpy.ceil(max_temporal_distances / 60.0)))))
     print(len(min_temporal_distances))
     assert(len(min_temporal_distances) == len(nodes))
 

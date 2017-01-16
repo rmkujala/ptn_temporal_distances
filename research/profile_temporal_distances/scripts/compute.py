@@ -14,7 +14,7 @@ from gtfspy.routing.models import Connection
 from gtfspy.routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
 
 from settings import HELSINKI_DATA_BASEDIR, RESULTS_DIRECTORY, ROUTING_START_TIME_DEP, ROUTING_END_TIME_DEP, \
-    ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP
+    ANALYSIS_START_TIME_DEP, HELSINKI_NODES_FNAME, ANALYSIS_END_TIME_DEP, HELSINKI_TRANSIT_CONNECTIONS_FNAME
 
 
 def target_list_to_str(targets):
@@ -59,7 +59,7 @@ def get_node_profile_statistics(targets, recompute=False, recompute_profiles=Fal
 
 def _read_connections_pandas():
     import pandas
-    events = pandas.read_csv(HELSINKI_DATA_BASEDIR + "main.day.temporal_network.csv")
+    events = pandas.read_csv(HELSINKI_TRANSIT_CONNECTIONS_FNAME)
     events = events[events["dep_time_ut"] >= ROUTING_START_TIME_DEP]
     time_filtered_events = events[events["dep_time_ut"] <= ROUTING_END_TIME_DEP]
     time_filtered_events.sort_values("dep_time_ut", ascending=False, inplace=True)
@@ -80,7 +80,7 @@ def _read_connections_csv(routing_start_time, routing_end_time):
     arr_time_index = 3
     trip_I_index = 6
     connections = []
-    with open(HELSINKI_DATA_BASEDIR + "main.day.temporal_network.csv", 'r') as csvfile:
+    with open(HELSINKI_TRANSIT_CONNECTIONS_FNAME, 'r') as csvfile:
         events_reader = csv.reader(csvfile, delimiter=',')
         for _row in events_reader:
             break
@@ -135,17 +135,23 @@ def _get_new_csp(targets=None, params=None, verbose=True):
         targets = [connections[0].departure_stop]
 
     if "max_walk_distance" not in params:
+        print("resetting max walk distance to default (1000m)")
         params["max_walk_distance"] = 1000
     net = _read_transfers_csv(params["max_walk_distance"])
     if "track_time" not in params:
+        print("setting time tracking on")
         params["track_time"] = True
     if "track_vehicle_legs" not in params:
-        params["track_time"] = True
+        print("setting vehicle boarcing counting on")
+        params["track_vehicle_legs"] = True
     if "transfer_margin" not in params:
+        print("resetting transfer margin to 180 seconds")
         params["transfer_margin"] = 180
     if "walking_speed" not in params:
+        print("resetting walking speed to default value of 70m/60s:")
         params["walking_speed"] = 70 / 60.0
 
+    print(len(net))
     csp = MultiObjectivePseudoCSAProfiler(
         connections,
         targets,
@@ -157,6 +163,7 @@ def _get_new_csp(targets=None, params=None, verbose=True):
         transfer_margin=params["transfer_margin"]
     )
     return csp, params
+
 
 def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=True,
                           routing_start_time_dep=None, routing_end_time_dep=None,
@@ -172,21 +179,26 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
     routing_start_time_dep
     routing_end_time_dep
     csp: connection scan profiler instance
-        targests are used to reset it
+        targets are used to reset it
 
     Returns
     -------
-
+    profiles: dict
+    csp: MultiObjectivePseudoCSAProfiler
     """
     max_walk_distance = 1000
     walking_speed = 70 / 60.0
     transfer_margin = 180
+
     if csp is None:
         params = {
             "track_vehicle_legs": track_vehicle_legs,
             "track_time": track_time,
+            "walking_speed": walking_speed,
+            "transfer_margin": transfer_margin,
             "routing_start_time_dep": routing_start_time_dep,
             "routing_end_time_dep": routing_end_time_dep,
+            "max_walk_distance": max_walk_distance
         }
         csp, params = _get_new_csp(targets=targets, params=params, verbose=verbose)
     else:
@@ -200,7 +212,7 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
         "target_stop_I": targets,
         "walk_distance": max_walk_distance,
         "walking_speed": walking_speed,
-        "transfer_margin": transfer_margin
+        "max_walk_distance": transfer_margin
     }
 
     profiles = {"params": parameters,
@@ -274,7 +286,7 @@ def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=
             continue
 
         obs_name_to_data = __compute_profile_stats_from_profiles(data["profiles"])
-        fname = os.path.join(RESULTS_DIRECTORY + "all_to_all_stats_target_{target}.pkl".format(target=str(target_I)))
+        fname = os.path.join(RESULTS_DIRECTORY, "all_to_all_stats", "all_to_all_stats_target_{target}.pkl".format(target=str(target_I)))
         to_store = {
             "target": target_I,
             "params": data["params"],
@@ -285,9 +297,28 @@ def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=
 
 
 if __name__ == "__main__":
+    # ROUTING_START_TIME_DEP = 1475528220
+    ROUTING_END_TIME_DEP = ROUTING_START_TIME_DEP + 3600  # 1475530980
+    targets = [115]
+    _profile_data, csp = _compute_profile_data(
+        targets=targets, track_vehicle_legs=True, track_time=True,
+        routing_start_time_dep=ROUTING_START_TIME_DEP,
+        routing_end_time_dep=ROUTING_END_TIME_DEP,
+        csp=None, return_profiler=True
+    )
+
+    profiles = _profile_data['profiles']
+
+    min_tdists = [NodeProfileAnalyzerTimeAndVehLegs(profile,
+                                                    start_time_dep=ANALYSIS_START_TIME_DEP,
+                                                    end_time_dep=ANALYSIS_END_TIME_DEP).min_temporal_distance()
+                  for profile in _profile_data['profiles'].values()]
+
+    uniques = numpy.unique(numpy.ceil(numpy.array(min_tdists) / 60.0))
+
     # performance testing:
-    orig_routing_end_time_dep = ROUTING_END_TIME_DEP
-    for i in range(1, 5):  # , 5):
-        ROUTING_END_TIME_DEP = ROUTING_START_TIME_DEP + i * 3600
-        print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
-        _compute_profile_data()
+    # orig_routing_end_time_dep = ROUTING_END_TIME_DEP
+    # for i in range(1, 5):  # , 5):
+    #     ROUTING_END_TIME_DEP = ROUTING_START_TIME_DEP + i * 3600
+    #     print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
+    #     _compute_profile_data()
