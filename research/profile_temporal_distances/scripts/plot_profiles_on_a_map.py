@@ -96,170 +96,6 @@ def plot_transfers():
     fig.savefig(RESULTS_DIRECTORY + "transfers-on-map.pdf")
 
 
-def plot_temporal_distances_draft():
-    targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
-    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
-    print(len(nodes))
-    data = get_node_profile_statistics(targets, recompute=False, recompute_profiles=False)
-    observable_name_to_data = data
-    min_temporal_distances = numpy.array(data["min_temporal_distance"])
-    mean_temporal_distances = numpy.array(data["mean_temporal_distance"])
-    max_temporal_distances = numpy.array(data["max_temporal_distance"])
-    print(list(sorted(numpy.unique(numpy.ceil(max_temporal_distances / 60.0)))))
-    print(len(min_temporal_distances))
-    assert(len(min_temporal_distances) == len(nodes))
-
-    observable_name_to_data["max_minus_min_temporal_distance"] = max_temporal_distances - min_temporal_distances
-    observable_name_to_data["max_minus_mean_temporal_distance"] = max_temporal_distances - mean_temporal_distances
-    observable_name_to_data["mean_minus_min_temporal_distance"] = mean_temporal_distances - min_temporal_distances
-
-    observable_name_to_data["max_minus_min_per_min"] = (max_temporal_distances - min_temporal_distances) / min_temporal_distances
-    observable_name_to_data["mean_minus_min_per_min"] = (mean_temporal_distances - min_temporal_distances) / min_temporal_distances
-    observable_name_to_data["max_minus_mean_per_mean"] = (max_temporal_distances - mean_temporal_distances) / mean_temporal_distances
-
-    print("Producing figures")
-    smopy_fig = plt.figure(figsize=(15, 10))  # , dpi=300)
-    plt.subplots_adjust(hspace=0.05, top=0.99, bottom=0.01, left=0.01, right=0.99, wspace=0.01)
-
-    def _get_subplot(_i):
-        subplot_grid = (6, 7)
-        if _i in range(0, 9):
-            col_span = 2
-            row_span = 2
-            loc = None
-            if _i is 0:
-                loc = (0, 0)
-            elif _i is 1:
-                loc = (0, 2)
-            elif _i is 2:
-                loc = (0, 4)
-            elif _i is 3:
-                loc = (2, 0)
-            elif _i is 4:
-                loc = (2, 2)
-            elif _i is 5:
-                loc = (2, 4)
-            elif _i is 6:
-                loc = (4, 0)
-            elif _i is 7:
-                loc = (4, 2)
-            elif _i is 8:
-                loc = (4, 4)
-            assert loc is not None
-            ax = plt.subplot2grid(subplot_grid, loc, colspan=col_span, rowspan=row_span)
-        else:
-            col_span = 1
-            row_span = 2
-            if _i is 9:
-                ax = smopy_fig.add_axes([0.9, 0.68, 0.05, 0.3])
-            if _i is 10:
-                ax = smopy_fig.add_axes([0.9, 0.35, 0.05, 0.3])
-            if _i is 11:
-                ax = smopy_fig.add_axes([0.9, 0.02, 0.05, 0.3])
-        return ax
-
-    # plot temporal distances
-    cmap = matplotlib.cm.get_cmap(name="inferno_r", lut=None)  # prism, viridis_r
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=80)
-    sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-    sm.set_array([norm.vmin, norm.vmax])
-    observable_names = ["min_temporal_distance",
-                        "mean_temporal_distance",
-                        "max_temporal_distance"]
-    for i, observable_name in zip(range(3), observable_names):
-        observable_values = numpy.array(observable_name_to_data[observable_name])
-        nans = numpy.isnan(observable_values)
-        observable_values[nans] = float('inf')
-        observable_values_to_plot = observable_values / 60.0
-        lats = list(nodes['lat'])
-        lons = list(nodes['lon'])
-
-        assert(len(observable_values_to_plot) == len(lats))
-        zipped = list(zip(observable_values_to_plot,
-                          list(lats),
-                          list(lons),
-                          [str(node) for node in nodes['desc']]))
-        zipped = list(reversed(sorted(zipped)))
-        observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
-        observable_values_to_plot = numpy.array(observable_values_to_plot)
-        lats = numpy.array(lats)
-        lons = numpy.array(lons)
-
-        print(observable_values_to_plot)
-        _plot_smopy(lats, lons, observable_values_to_plot,
-                    observable_name, sm, None, node_desc, ax=_get_subplot(i))
-    cax = _get_subplot(9)
-    cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="Temporal distance (min)")
-
-
-    # plot temporal distance differences
-    cmap = matplotlib.cm.get_cmap(name="viridis_r", lut=None)  # prism, viridis_r
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=30)
-    sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-    sm.set_array([norm.vmin, norm.vmax])
-    observable_names = ["mean_minus_min_temporal_distance",
-                        "max_minus_min_temporal_distance",
-                        "max_minus_mean_temporal_distance",
-                        ]
-
-    for i, observable_name in zip(range(3, 6), observable_names):
-        observable_values = numpy.array(observable_name_to_data[observable_name])
-        nans = numpy.isnan(observable_values)
-        observable_values[nans] = float('inf')
-        observable_values_to_plot = observable_values / 60.0
-        lats = list(nodes['lat'])
-        lons = list(nodes['lon'])
-
-        assert (len(observable_values_to_plot) == len(lats))
-        zipped = list(zip(observable_values_to_plot,
-                          list(lats),
-                          list(lons),
-                          [str(node) for node in nodes['desc']]))
-        zipped = list(reversed(sorted(zipped)))
-        observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
-        observable_values_to_plot = numpy.array(observable_values_to_plot)
-        lats = numpy.array(lats)
-        lons = numpy.array(lons)
-        _plot_smopy(lats, lons, observable_values_to_plot,
-                    observable_name, sm, None, node_desc, ax=_get_subplot(i))
-    cax = _get_subplot(10)
-    cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="Difference (min)")
-
-    observable_names = [
-        "max_minus_min_per_min",
-        "mean_minus_min_per_min",
-        "max_minus_mean_per_mean"
-    ]
-
-    cmap = matplotlib.cm.get_cmap(name="viridis", lut=None)  # prism, viridis_r
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
-    sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-    sm.set_array([norm.vmin, norm.vmax])
-    for i, observable_name in zip(range(6, 9), observable_names):
-        observable_values = numpy.array(observable_name_to_data[observable_name])
-        nans = numpy.isnan(observable_values)
-        observable_values[nans] = float('inf')
-        observable_values_to_plot = observable_values
-        lats = list(nodes['lat'])
-        lons = list(nodes['lon'])
-
-        assert (len(observable_values_to_plot) == len(lats))
-        zipped = list(zip(observable_values_to_plot,
-                          list(lats),
-                          list(lons),
-                          [str(node) for node in nodes['desc']]))
-        zipped = list((sorted(zipped)))
-        observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
-        observable_values_to_plot = numpy.array(observable_values_to_plot)
-        lats = numpy.array(lats)
-        lons = numpy.array(lons)
-        _plot_smopy(lats, lons, observable_values_to_plot,
-                    observable_name, sm, None, node_desc, ax=_get_subplot(i))
-    cax = _get_subplot(11)
-    cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="Fraction")
-
-    plt.show()
-    smopy_fig.savefig(RESULTS_DIRECTORY + "multiple_measures.pdf")
 
 
 
@@ -378,7 +214,7 @@ def _plot_mplleafflet(lats, lons, observable_values_in_minutes, observable_name,
 
 
 def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scalar_mappable, basename, node_names,
-                ax=None, return_smopy_map=False):
+                ax=None, return_smopy_map=False, s=12):
     if ax is None:
         fig = plt.figure()  # figsize=(12, 8), dpi=300)
         ax = fig.add_subplot(111)
@@ -399,7 +235,7 @@ def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scala
 
     assert (isinstance(ax, matplotlib.axes.Axes))
     valids = observable_values_in_minutes < float('inf')
-    ax.scatter(xs[valids], ys[valids], c=colors[valids], edgecolors=colors[valids], s=12)
+    ax.scatter(xs[valids], ys[valids], c=colors[valids], edgecolors=colors[valids], s=s)
     if observable_name:
         ax.set_title(observable_name)
     if return_smopy_map:
