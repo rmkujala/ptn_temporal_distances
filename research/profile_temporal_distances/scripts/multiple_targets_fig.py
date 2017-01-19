@@ -61,7 +61,7 @@ def plot_smopy(lats, lons, observable_values_in_minutes,
     ax.set_title(observable_name)
     return ax
 
-use_swimming_halls = True
+use_swimming_halls = False
 
 
 if use_swimming_halls:
