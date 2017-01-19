@@ -67,6 +67,7 @@ gs2.update(left=0.55, right=0.98, wspace=0.15, bottom=0.2)
 for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     from_stop_name = nodes[nodes["stop_I"] == from_stop_I]["name"].values[0]
 
+
     stop_profile = profiles[from_stop_I]
     if isinstance(stop_profile, NodeProfileMultiObjective) and stop_profile.label_class == LabelTimeWithBoardingsCount:
         analyzer = NodeProfileAnalyzerTimeAndVehLegs(stop_profile, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP)

@@ -50,15 +50,15 @@ def split_into_equal_length_parts(array, n_splits):
 def make_filename_nice(fname):
     fname = fname.replace(" ", "_")
     fname = fname.replace("'", "")
-    fname = fname.replace("Ã¤", "a")
-    fname = fname.replace("Ã¶", "o")
+    fname = fname.replace("ä", "a")
+    fname = fname.replace("ö", "o")
     return fname
 
 def make_string_latex_friendly(fname):
     fname = fname.replace("_", "\\_")
     fname = fname.replace("'", "")
-    fname = fname.replace("Ã¤", '\\"a')
-    fname = fname.replace("Ã¶", '\\"o')
+    fname = fname.replace("ä", '\\\"a')
+    fname = fname.replace("ö", '\\"o')
     return fname
 
 def get_data_or_compute(fname, comp_func, *args, **kwargs):

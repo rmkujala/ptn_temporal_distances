@@ -142,7 +142,7 @@ def _get_new_csp(targets=None, params=None, verbose=True):
         print("setting time tracking on")
         params["track_time"] = True
     if "track_vehicle_legs" not in params:
-        print("setting vehicle boarcing counting on")
+        print("setting vehicle boarding counting on")
         params["track_vehicle_legs"] = True
     if "transfer_margin" not in params:
         print("resetting transfer margin to 180 seconds")
@@ -151,7 +151,7 @@ def _get_new_csp(targets=None, params=None, verbose=True):
         print("resetting walking speed to default value of 70m/60s:")
         params["walking_speed"] = 70 / 60.0
 
-    print(len(net))
+    print(params)
     csp = MultiObjectivePseudoCSAProfiler(
         connections,
         targets,
@@ -162,6 +162,8 @@ def _get_new_csp(targets=None, params=None, verbose=True):
         verbose=verbose,
         transfer_margin=params["transfer_margin"]
     )
+
+
     return csp, params
 
 
@@ -189,17 +191,17 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
     max_walk_distance = 1000
     walking_speed = 70 / 60.0
     transfer_margin = 180
-
+    params = {
+        "track_vehicle_legs": track_vehicle_legs,
+        "track_time": track_time,
+        "walking_speed": walking_speed,
+        "transfer_margin": transfer_margin,
+        "routing_start_time_dep": routing_start_time_dep,
+        "routing_end_time_dep": routing_end_time_dep,
+        "max_walk_distance": max_walk_distance,
+        "targets": targets
+    }
     if csp is None:
-        params = {
-            "track_vehicle_legs": track_vehicle_legs,
-            "track_time": track_time,
-            "walking_speed": walking_speed,
-            "transfer_margin": transfer_margin,
-            "routing_start_time_dep": routing_start_time_dep,
-            "routing_end_time_dep": routing_end_time_dep,
-            "max_walk_distance": max_walk_distance
-        }
         csp, params = _get_new_csp(targets=targets, params=params, verbose=verbose)
     else:
         csp.reset(targets)
@@ -208,14 +210,8 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
     csp.run()
     print("CSA profiler finished")
 
-    parameters = {
-        "target_stop_I": targets,
-        "walk_distance": max_walk_distance,
-        "walking_speed": walking_speed,
-        "max_walk_distance": transfer_margin
-    }
 
-    profiles = {"params": parameters,
+    profiles = {"params": params,
                 "profiles": dict(csp.stop_profiles)
     }
     if return_profiler:

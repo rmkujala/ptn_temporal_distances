@@ -11,15 +11,16 @@ from matplotlib.axes import Axes
 import pandas
 
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
-from plot_profiles_on_a_map import _plot_smopy, _get_smopy_map
-from settings import RESULTS_DIRECTORY
+from plot_profiles_on_a_map import _plot_smopy
+from settings import RESULTS_DIRECTORY, FIGS_DIRECTORY
 
 from gtfspy.util import wgs84_distance
 from util import get_data_or_compute, _get_smopy_map
 
 from settings import HELSINKI_NODES_FNAME
 
-
+from matplotlib import rc
+rc("text", usetex=True)
 
 recompute_all = False
 
@@ -60,21 +61,27 @@ def plot_smopy(lats, lons, observable_values_in_minutes,
     ax.set_title(observable_name)
     return ax
 
+use_swimming_halls = True
 
-fname = os.path.join(RESULTS_DIRECTORY, "swimming_halls_json.pickle")
-target_locations = get_data_or_compute(fname, get_swimming_halls)
+
+if use_swimming_halls:
+    fname = os.path.join(RESULTS_DIRECTORY, "swimming_halls_json.pickle")
+    target_locations = get_data_or_compute(fname, get_swimming_halls)
+    fname_postfix = "swimming_halls"
+else:
+    helsinki_railway_station = {"latitude": 60.171861, "longitude": 24.941415}
+    pasila_railway_station = {"latitude": 60.198889, "longitude": 24.933358}
+    tikkurila_railway_station = {"latitude": 60.292471, "longitude": 25.044091}
+    target_locations = [helsinki_railway_station, pasila_railway_station, tikkurila_railway_station]
+    fname_postfix = "train_stations"
+
+closest_stops_fname = os.path.join(RESULTS_DIRECTORY, "multiple_targets_closest_nodes_" + fname_postfix + ".pickle")
 
 # with open("/Users/rmkujala/Desktop/uimahallit.csv", 'w') as f:
 #     f.write("name,lat, lon\n")
 #     for swimming_hall in swimming_halls:
 #         f.write(str(swimming_hall['name_en']) + "," + str(swimming_hall['latitude']) + "," + str(swimming_hall['longitude']) + "\n")
 
-
-if False:
-    helsinki_railway_station = {"latitude": 60.171861, "longitude":24.941415}
-    pasila_railway_station = {"latitude": 60.198889, "longitude": 24.933358}
-    tikkurila_railway_station = {"latitude": 60.292471, "longitude":25.044091}
-    target_locations = [helsinki_railway_station, pasila_railway_station, tikkurila_railway_station]
 
 
 def get_closest_nodes():
@@ -94,7 +101,6 @@ def get_closest_nodes():
     return closest_stops
 
 
-closest_stops_fname = os.path.join(RESULTS_DIRECTORY, "multiple_targets_closest_nodes.pickle")
 closest_stop_Is = get_data_or_compute(closest_stops_fname, get_closest_nodes, recompute=recompute_all)
 
 targets = closest_stop_Is
@@ -107,11 +113,11 @@ kwargs_for_computations = {
     "track_time": True
 }
 
-profile_data_fname = os.path.join(RESULTS_DIRECTORY, "profiles_targets_multiple_targets.pickle")
+profile_data_fname = os.path.join(RESULTS_DIRECTORY, "profiles_targets_multiple_targets_" + fname_postfix + ".pickle")
 profiles = get_data_or_compute(profile_data_fname, _compute_profile_data, recompute=recompute_all,
                                **kwargs_for_computations)['profiles']
 
-profile_data_fname = os.path.join(RESULTS_DIRECTORY, "profile_stats_multiple_targets.pickle")
+profile_data_fname = os.path.join(RESULTS_DIRECTORY, "profile_stats_multiple_targets_" + fname_postfix + ".pickle")
 profile_statistics = get_data_or_compute(profile_data_fname, __compute_profile_stats_from_profiles,
                                          profiles, recompute=recompute_all)
 
@@ -161,7 +167,10 @@ for i, (observable, lims, title, cmap, ax, cax) in enumerate(
     target_lons = numpy.array([t['longitude'] for t in target_locations])
 
     xs, ys = smopy_map.to_pixels(target_lats, target_lons)
-    ax.scatter(xs, ys, marker="*", color="blue", s=120)
+    ax.scatter(xs, ys,
+               marker="*",
+               color="blue",
+               s=120)
 
     if i == 1:
         ticks = list(range(int(max_n_boardings)))
@@ -173,10 +182,19 @@ for i, (observable, lims, title, cmap, ax, cax) in enumerate(
 
 fig.savefig(os.path.join(RESULTS_DIRECTORY, "multiple_targets.pdf"))
 
-for ax, cax in zip(axs, caxs):
+for ax, cax, letter in zip(axs, caxs, "ABCDE"):
     ax0, ay0, aw1, ah1 = ax.get_position().bounds
     cx0, cy0, cw1, ch1 = cax.get_position().bounds
     print(cx0, ay0, cw1, ah1)
     cax.set_position([cx0, ay0, (cw1) / 2., ah1])
+    ax.text(0.04, 0.96, "\\textbf{" + letter + "}",
+            horizontalalignment="left",
+            verticalalignment="top",
+            transform=ax.transAxes,
+            fontsize=15,
+            color="black",
+            backgroundcolor="white")
 
-fig.savefig(os.path.join(RESULTS_DIRECTORY, "multiple_targets.pdf"))
+fig.savefig(os.path.join(FIGS_DIRECTORY, "multiple_targets_" + fname_postfix + ".pdf"))
+plt.show()
+

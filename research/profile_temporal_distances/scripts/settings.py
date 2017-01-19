@@ -3,6 +3,8 @@ import os
 import pytz
 
 RESULTS_DIRECTORY = "../results/"
+FIGS_DIRECTORY = "../figs/"
+
 HELSINKI_DATA_BASEDIR = "../data/helsinki/2016-09-28/"
 HELSINKI_NODES_FNAME = HELSINKI_DATA_BASEDIR + "main.day.nodes.csv"
 HELSINKI_TRANSIT_CONNECTIONS_FNAME = os.path.join(HELSINKI_DATA_BASEDIR, "main.day.temporal_network.csv")
