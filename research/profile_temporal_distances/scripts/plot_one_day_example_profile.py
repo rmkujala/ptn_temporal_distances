@@ -7,6 +7,8 @@ from compute import _compute_profile_data
 from util import get_data_or_compute
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 
+from matplotlib import rc
+rc("text", usetex=True)
 
 fname = os.path.join(settings.RESULTS_DIRECTORY, "long_profiles.pkl")
 params = {
@@ -16,6 +18,9 @@ params = {
 }
 
 data = get_data_or_compute(fname, _compute_profile_data, recompute=False, **params)
+
+print(data["params"])
+
 profiles = data["profiles"]
 itakeskus_profile = profiles[settings.ITAKESKUS_STOP_ID]
 
@@ -23,7 +28,7 @@ npa = NodeProfileAnalyzerTimeAndVehLegs(itakeskus_profile,
                                         settings.DAY_START + 6 * 3600,
                                         settings.DAY_START + 21 * 3600)
 
-print(npa.all_labels)
+
 fig = plt.figure(figsize=(12, 4))
 ax = fig.add_subplot(111)
 npa.plot_new_transfer_temporal_distance_profile(timezone=settings.TIMEZONE,
@@ -34,7 +39,10 @@ npa.plot_new_transfer_temporal_distance_profile(timezone=settings.TIMEZONE,
                                                 default_lw=1.5,
                                                 ncol_legend=1)
 
+ax.set_ylabel("Temporal distance $\\tau$")
+ax.set_title('From It\\"akeskus to Alvar Aalto\'s park')
 fig.tight_layout()
-fig.savefig(os.path.join(settings.RESULTS_DIRECTORY, "long_profile_with_transfers.pdf"))
+fig.savefig(os.path.join(settings.FIGS_DIRECTORY, "long_profile_with_transfers.pdf"))
 
 plt.show()
+
