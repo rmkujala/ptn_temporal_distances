@@ -1,3 +1,4 @@
+# -*- coding: latin-1 -*-
 import pickle
 import multiprocessing
 
@@ -60,7 +61,7 @@ def make_string_latex_friendly(fname):
     fname = fname.replace("ö", '\\"o')
     return fname
 
-def get_data_or_compute(fname, comp_func, *args, recompute=False, **kwargs):
+def get_data_or_compute(fname, comp_func, *args, **kwargs):
     """
     Parameters
     ----------
@@ -80,6 +81,8 @@ def get_data_or_compute(fname, comp_func, *args, recompute=False, **kwargs):
     data: object
         the data object returned by comp_fund
     """
+    recompute = kwargs.pop('recompute', False)
+
     try:
         if recompute:
             raise RuntimeError("Recompute!")
