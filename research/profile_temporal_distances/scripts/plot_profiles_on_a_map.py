@@ -25,75 +25,6 @@ from settings import RESULTS_DIRECTORY
 from settings import OTANIEMI_STOP_ID
 
 
-def plot_transfers():
-    targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
-    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
-    observable_name_to_data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=False)
-
-    observable_names_to_plot = ["min_n_boardings",
-                                "mean_n_boardings_on_shortest_paths",
-                                "min_n_boardings_on_shortest_paths",
-                                "max_n_boardings_on_shortest_paths"]
-    fig = plt.figure(figsize=(12, 10))  # , dpi=300)
-    plt.subplots_adjust(hspace=0.05, top=0.99, bottom=0.01, left=0.01, right=0.99, wspace=0.01)
-
-    def _get_subplot(i):
-        subplot_grid = (6, 7)
-        if i in [0, 1, 2, 3]:
-            col_span = 3
-            row_span = 3
-            if i is 0:
-                ax = plt.subplot2grid(subplot_grid, (0, 0), colspan=col_span, rowspan=row_span)
-            elif i is 1:
-                ax = plt.subplot2grid(subplot_grid, (0, 3), colspan=col_span, rowspan=row_span)
-            elif i is 2:
-                ax = plt.subplot2grid(subplot_grid, (3, 0), colspan=col_span, rowspan=row_span)
-            elif i is 3:
-                ax = plt.subplot2grid(subplot_grid, (3, 3), colspan=col_span, rowspan=row_span)
-        else:
-            col_span = 1
-            row_span = 6
-            ax = plt.subplot2grid(subplot_grid, (0, 6), colspan=col_span, rowspan=row_span)
-        return ax
-
-    max_n_boardings = 5
-    cmap = NodeProfileAnalyzerTimeAndVehLegs.get_colormap_for_boardings(max_n_boardings)
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=max_n_boardings)
-    sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-    sm.set_array([norm.vmin, norm.vmax])
-
-    for i, observable_name in enumerate(observable_names_to_plot):
-        print(observable_name)
-        observable_values = observable_name_to_data[observable_name]
-        # set up colors
-
-        observable_values = numpy.array(observable_values)
-
-        nans = numpy.isnan(observable_values)
-        observable_values[nans] = float('inf')
-        observable_values_to_plot = observable_values
-
-        lats = nodes['lat']
-        lons = nodes['lon']
-        zipped = list(zip(observable_values_to_plot, lats, lons,
-                          [str(node) for node in nodes['desc']]))
-        zipped = sorted(zipped)
-        if "minus" not in observable_name:
-            zipped = reversed(zipped)
-        observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
-        observable_values_to_plot = numpy.array(observable_values_to_plot)
-        lats = numpy.array(lats)
-        lons = numpy.array(lons)
-
-        _plot_smopy(lats, lons, observable_values_to_plot,
-                    observable_name, sm, None, node_desc,
-                    ax=_get_subplot(i))
-        print("Done with " + observable_name)
-    # cax = _get_subplot(4)
-    cax = fig.add_axes([0.9, 0.1, 0.05, 0.8])
-    cbar = fig.colorbar(sm, cax=cax, orientation="vertical", label="Number of boardings")
-    cbar.set_ticks(range(0, max_n_boardings + 1))
-    fig.savefig(RESULTS_DIRECTORY + "transfers-on-map.pdf")
 
 
 
@@ -271,6 +202,5 @@ def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable
 
 
 if __name__ == "__main__":
-    # plot_transfers()
-    plot_temporal_distances_draft()
+    plot_transfers()
     # plot_temporal_distances()

@@ -89,7 +89,7 @@ def get_data_or_compute(fname, comp_func, *args, **kwargs):
         with open(fname, "rb") as f:
             data = pickle.load(f)
     except (RuntimeError, TypeError, EOFError, IOError) as e:
-        print(e)
+        print("Data not found, computing; error message was:" + str(e))
         with open(fname, "wb") as f:
             data = comp_func(*args, **kwargs)
             pickle.dump(data, f, -1)
