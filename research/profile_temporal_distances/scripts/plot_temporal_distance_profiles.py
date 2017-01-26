@@ -12,6 +12,7 @@ from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP, TIMEZONE
 from settings import OTANIEMI_STOP_ID, ITAKESKUS_STOP_ID, MUNKKIVUORI_STOP_ID
+from settings import FIGS_DIRECTORY
 from compute import get_profile_data
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
@@ -53,7 +54,7 @@ if target_stop_name == "Alvar Aallon puisto":
 fig1 = plt.figure(figsize=(11, 3.5))
 
 
-fig1_fname = u"../results/" + target_stop_name + "_from_"
+fig1_fname = FIGS_DIRECTORY + "/" + target_stop_name + "_from_"
 
 
 gs1 = gridspec.GridSpec(1, 6)
@@ -101,10 +102,27 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     ax2.set_yticklabels([""] * len(ax2.get_yticks()))
 
     ax1.legend(loc="best", prop={'size': 12})
+    letter = "AC"[i]
+    ax1.text(0.04, 0.98,
+             "\\textbf{" + letter + "}",
+             horizontalalignment="left",
+             verticalalignment="top",
+             transform=ax1.transAxes,
+             fontsize=15,
+             color="black")
+
+    letter = "BD"[i]
+    ax2.text(0.04, 0.98,
+             "\\textbf{" + letter + "}",
+             horizontalalignment="left",
+             verticalalignment="top",
+             transform=ax2.transAxes,
+             fontsize=15,
+             color="black")
 
     title = u"From " + from_stop_name + u" to " + target_stop_name
 
-    ax1.set_title(make_string_latex_friendly(title))
+    fig1.text(0.25 + 0.5*i, 0.94, make_string_latex_friendly(title), ha="center", va="center", size=14)
     fig1_fname += from_stop_name + "_"
 
     if i == len(from_stop_Is) - 1:
@@ -112,9 +130,10 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
         fig1_fname += u"_trip_stats"
         fig1_fname += u".pdf"
         fig1_fname = make_filename_nice(fig1_fname)
+        print(fig1_fname)
         fig1.savefig(fig1_fname)
 
-    fname = u"../results/" + from_stop_name + "_to_" + target_stop_name + ".pdf"
+    fname = FIGS_DIRECTORY + "/" + from_stop_name + "_to_" + target_stop_name + ".pdf"
     fname = make_filename_nice(fname)
 
     fig = plt.figure(figsize=(6, 4))

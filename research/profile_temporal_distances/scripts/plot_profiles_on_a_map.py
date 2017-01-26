@@ -145,7 +145,8 @@ def _plot_mplleafflet(lats, lons, observable_values_in_minutes, observable_name,
 
 
 def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scalar_mappable, basename, node_names,
-                ax=None, return_smopy_map=False, s=12):
+                ax=None, return_smopy_map=False, s=12, target_lats=None, target_lons=None, target_marker_color=None,
+                target_marker_size=None, target_marker_width=None):
     if ax is None:
         fig = plt.figure()  # figsize=(12, 8), dpi=300)
         ax = fig.add_subplot(111)
@@ -167,6 +168,23 @@ def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scala
     assert (isinstance(ax, matplotlib.axes.Axes))
     valids = observable_values_in_minutes < float('inf')
     ax.scatter(xs[valids], ys[valids], c=colors[valids], edgecolors=colors[valids], s=s)
+
+    if target_lats is not None and target_lons is not None:
+        target_lats = numpy.array(target_lats)
+        target_lons = numpy.array(target_lons)
+
+        xs, ys = smopy_map.to_pixels(target_lats, target_lons)
+        if target_marker_color is None:
+            target_marker_color = "red"
+        if target_marker_size is None:
+            target_marker_size=10
+        if target_marker_width is None:
+            target_marker_width = 3
+        ax.plot(xs, ys, "x",
+                markeredgewidth=target_marker_width,
+                color=target_marker_color,
+                markersize=target_marker_size)
+
     if observable_name:
         ax.set_title(observable_name)
     if return_smopy_map:

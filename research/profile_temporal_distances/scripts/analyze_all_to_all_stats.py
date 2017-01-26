@@ -56,7 +56,7 @@ def _plot_2d_pdf(xvalues, yvalues, xbins, ybins, aspect='equal', ax=None):
                    extent=extent, cmap=cmap, aspect=aspect)
 
     cbar = ax.figure.colorbar(im, ax=ax)
-    cbar.set_label(r"Probability density", size=10)
+    cbar.set_label(r"Probability density", size=8)
     cbar.formatter.set_powerlimits((0, 0))
     cbar.ax.yaxis.set_offset_position('left')
     cbar.update_ticks()
@@ -106,7 +106,7 @@ def _load_data():
         )
         # print(matrix.shape)
         # print(rands.shape)
-        # print("Taking only a small sample for faster plot dev!")
+        # print("Taking only a small sample for faster plot devevelopment!")
         # matrix = matrix[rands]
         print(matrix.shape)
         observable_to_matrix[observable] = matrix
@@ -255,7 +255,7 @@ def plot_mean_minus_min_per_min_vs_min(ax, mins, means, time_bins):
                       numpy.linspace(0, 3, 100), aspect='auto', ax=ax)
     ax.set_ylabel("$(\\tau_\\mathrm{mean} - \\tau_\\mathrm{min}) / \\tau_\\mathrm{min}$")
     ax.set_xlabel("$\\tau_\\mathrm{min}$")
-    ax.set_xlim([0, 140])
+    ax.set_xlim([0, 120])
     ax.set_ylim([0, 2])
 
 
@@ -327,7 +327,65 @@ def plot_min_n_boardings_vs_mean_n_boardings(ax, min_nboardings, mean_n_boarding
     ax.set_ylim([0, max(mean_n_boardings_fp)])
 
 
-def plot_boarding_count_distributions(ax, min_nboardings, mean_n_boardings_fp, max_n_boardings_fp):
+def plot_boarding_count_distributions(ax1, min_nboardings, mean_n_nboardings_fp, max_n_boardings_fp):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    divider = make_axes_locatable(ax1)
+    ax2 = divider.new_vertical(size="100%", pad=0.03, pack_start=True)
+    ax3 = divider.new_vertical(size="100%", pad=0.03, pack_start=True)
+    fig = ax1.get_figure()
+    fig.add_axes(ax2)
+    fig.add_axes(ax3)
+    labels = ["$b_\\mathrm{%s}$" % s for s in ["min", "mean,f.p.", "max,f.p"]]
+
+
+    orig_colors = [[237, 248, 177], [127, 205, 187], [44, 127, 184]][::-1]
+    alphas = [1.0, 0.7, 1.0]
+    colors = [(r / 256., g / 256., b / 256, alpha) for (r, g, b), alpha in zip(orig_colors, alphas)]
+
+    max_n = max(max_n_boardings_fp)
+
+    for i, (ax, values, color, label, lw) in enumerate(zip([ax1, ax2, ax3],
+                                                           [min_nboardings, mean_n_nboardings_fp, max_n_boardings_fp],
+                                                           colors,
+                                                           labels,
+                                                           [2, 1.5, 1.])):
+        bins = numpy.linspace(-0.1, max_n + 0.1, max_n * 5 + 2)
+        if i == 1:
+            ax.hist(values,
+                bins=bins,
+                facecolor=color,
+                edgecolor="k",
+                histtype="stepfilled",
+                normed=True,
+                label=label,
+                lw=lw
+            )
+        else:
+            hist, bin_edges = numpy.histogram(values, bins)
+            print(bin_edges)
+            hist = hist / numpy.sum(hist)
+            ax.bar(bin_edges[:-1], hist, width=bin_edges[1]-bin_edges[0], edgecolor="k", label=label, lw=lw, facecolor=color)
+
+        leg = ax.legend(loc="best", fancybox=True)
+        leg.get_frame().set_alpha(0.9)
+
+
+    ax3.set_xlabel("Number of boardings $b$")
+    for ax in [ax1, ax2, ax3]:
+        ax.set_ylabel("$P(b)$")
+        plt.sca(ax)
+        plt.locator_params(nbins=3, axis="y")
+        list(ax.get_yticklabels())[-1].set_visible(False)
+
+        ax.set_xlim(-0.2, max_n + 0.2)
+
+        if ax in [ax1, ax2]:
+            for tl in ax.get_xticklabels():
+                tl.set_visible(False)
+
+
+def plot_boarding_count_distributions_old(ax, min_nboardings, mean_n_boardings_fp, max_n_boardings_fp):
     ax.set_xlabel("Number of boardings $b$")
     ax.set_ylabel("Probability density $P(b)$")
     orig_colors = [[237, 248, 177], [127, 205, 187], [44, 127, 184]][::-1]
@@ -362,14 +420,14 @@ def plot_boarding_count_distributions(ax, min_nboardings, mean_n_boardings_fp, m
     ax.yaxis.set_major_formatter(xfmt)
     leg = ax.legend(loc="best", fancybox=True)
     leg.get_frame().set_alpha(0.9)
-    ax.set_xlim(-0.15, max_n+0.15)
+    ax.set_xlim(-0.15, max_n + 0.15)
 
 
 
 
 if __name__ == "__main__":
     time_bins, flattened_time_valid_dict = _load_data()
-    fig = plt.figure(figsize=(16, 8))
+    fig = plt.figure(figsize=(12, 6))
 
     ax1 = fig.add_subplot(2, 3, 1)
     plot_min_tdist_pdf(ax1,
@@ -385,7 +443,7 @@ if __name__ == "__main__":
                                flattened_time_valid_dict["mean_temporal_distance"],
                                time_bins
                                )
-    ax2.set_xlim(0, 140)
+    ax2.set_xlim(0, 120)
     ax2.set_ylim(0, 80)
     print("finished ax2")
 
@@ -395,7 +453,7 @@ if __name__ == "__main__":
                                        flattened_time_valid_dict["mean_temporal_distance"],
                                        time_bins
                                        )
-    ax3.set_xlim(0, 140)
+    ax3.set_xlim(0, 120)
     print("finished ax3")
 
     ax4 = fig.add_subplot(2, 3, 4)
@@ -411,7 +469,7 @@ if __name__ == "__main__":
                                  flattened_time_valid_dict["min_temporal_distance"],
                                  flattened_time_valid_dict["mean_n_boardings_on_shortest_paths"],
                                  time_bins=time_bins)
-    ax5.set_xlim(0, 140)
+    ax5.set_xlim(0, 120)
     print("finished ax5")
 
     ax6 = fig.add_subplot(2, 3, 6)
@@ -419,11 +477,15 @@ if __name__ == "__main__":
                                           flattened_time_valid_dict["min_temporal_distance"],
                                           flattened_time_valid_dict["n_pareto_optimal_trips"],
                                           time_bins=time_bins)
-    ax6.set_xlim(0, 140)
+    ax6.set_xlim(0, 120)
     print("finished ax6")
 
     for ax, letter in zip([ax1, ax2, ax3, ax4, ax5, ax6], "ABCDEF"):
-        ax.text(0.04, 0.96, "\\textbf{" + letter + "}",
+        if ax is ax4:
+            y = 0.85
+        else:
+            y = 0.96
+        ax.text(0.04, y, "\\textbf{" + letter + "}",
                 horizontalalignment="left",
                 verticalalignment="top",
                 transform=ax.transAxes,
