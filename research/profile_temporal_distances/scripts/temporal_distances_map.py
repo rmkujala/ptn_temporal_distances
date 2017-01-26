@@ -19,6 +19,11 @@ rc("text", usetex=True)
 
 targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
 nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
+
+targets_info = nodes[nodes.stop_I.isin(targets)]
+target_lats = targets_info['lat']
+target_lons = targets_info['lon']
+
 print(len(nodes))
 data = get_node_profile_statistics(targets, recompute=False, recompute_profiles=False)
 observable_name_to_data = data
@@ -83,7 +88,8 @@ for i, observable_name, title in zip(range(3), observable_names, titles):
 
     print(observable_values_to_plot)
     _plot_smopy(lats, lons, observable_values_to_plot,
-                title, sm, None, node_desc, ax=_i_to_ax[i], s=6)
+                title, sm, None, node_desc, ax=_i_to_ax[i], s=6, target_lats=target_lats, target_lons=target_lons,
+                target_marker_color=None)
 
 cax = _i_to_ax[5]
 cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="minutes")
@@ -110,7 +116,8 @@ observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
 observable_values_to_plot = numpy.array(observable_values_to_plot)
 lats = numpy.array(lats)
 lons = numpy.array(lons)
-ax = _plot_smopy(lats, lons, observable_values_to_plot, "", sm, None, node_desc, ax=_i_to_ax[3], s=6)
+ax = _plot_smopy(lats, lons, observable_values_to_plot, "", sm, None, node_desc, ax=_i_to_ax[3], s=6,
+                 target_lats=target_lats, target_lons=target_lons)
 smopy_fig.savefig('/tmp/tmp.pdf')
 print(ax.get_position())
 
@@ -142,7 +149,8 @@ observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
 observable_values_to_plot = numpy.array(observable_values_to_plot)
 lats = numpy.array(lats)
 lons = numpy.array(lons)
-ax = _plot_smopy(lats, lons, observable_values_to_plot, "", sm, None, node_desc, ax=_i_to_ax[4], s=6)
+ax = _plot_smopy(lats, lons, observable_values_to_plot, "", sm, None, node_desc, ax=_i_to_ax[4], s=6,
+                 target_lats=target_lats, target_lons=target_lons)
 
 ax = _i_to_ax[4]
 divider = make_axes_locatable(ax)
@@ -161,3 +169,4 @@ for i, letter in zip(range(5), "ABCDE"):
             color="white")
 
 smopy_fig.savefig(os.path.join(FIGS_DIRECTORY, "temporal_distances_on_map.pdf"))
+plt.show()

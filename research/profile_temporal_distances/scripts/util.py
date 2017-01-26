@@ -56,7 +56,7 @@ def make_filename_nice(fname):
 
 def make_string_latex_friendly(fname):
     fname = fname.replace("_", "\\_")
-    fname = fname.replace("'", "")
+    fname = fname.replace("'", "\'")
     fname = fname.replace("ä", '\\\"a')
     fname = fname.replace("ö", '\\"o')
     return fname

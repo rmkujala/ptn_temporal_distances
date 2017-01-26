@@ -24,6 +24,7 @@ rc("text", usetex=True)
 
 recompute_all = False
 
+
 def get_swimming_halls():
     url = "http://www.hel.fi/palvelukarttaws/rest/v2/unit/?service=33462"
     print("fetching data from " + url)
@@ -36,6 +37,7 @@ def plot_smopy(lats, lons, observable_values_in_minutes,
                observable_name, scalar_mappable,
                basename, node_names,
                ax=None):
+
     if ax is None:
         fig = plt.figure()  # figsize=(12, 8), dpi=300)
         ax = fig.add_subplot(111)
@@ -62,7 +64,6 @@ def plot_smopy(lats, lons, observable_values_in_minutes,
     return ax
 
 use_swimming_halls = False
-
 
 if use_swimming_halls:
     fname = os.path.join(RESULTS_DIRECTORY, "swimming_halls_json.pickle")
@@ -160,17 +161,15 @@ for i, (observable, lims, title, cmap, ax, cax) in enumerate(
     if numpy.median(values) > 10:
         values /= 60.0
 
-    _, smopy_map = _plot_smopy(lats[to_sort], lons[to_sort], values[to_sort],
-                None, sm, None, None, ax=ax, return_smopy_map=True)
-
     target_lats = numpy.array([t['latitude'] for t in target_locations])
     target_lons = numpy.array([t['longitude'] for t in target_locations])
+    _, smopy_map = _plot_smopy(lats[to_sort], lons[to_sort], values[to_sort],
+                None, sm, None, None, ax=ax, return_smopy_map=True,
+                               target_lats=target_lats, target_lons=target_lons,
+                               target_marker_color="blue",
+                               target_marker_width=2.5,
+                               target_marker_size=8)
 
-    xs, ys = smopy_map.to_pixels(target_lats, target_lons)
-    ax.scatter(xs, ys,
-               marker="*",
-               color="blue",
-               s=120)
 
     if i == 1:
         ticks = list(range(int(max_n_boardings)))
@@ -192,8 +191,7 @@ for ax, cax, letter in zip(axs, caxs, "ABCDE"):
             verticalalignment="top",
             transform=ax.transAxes,
             fontsize=15,
-            color="black",
-            backgroundcolor="white")
+            color="white")
 
 fig.savefig(os.path.join(FIGS_DIRECTORY, "multiple_targets_" + fname_postfix + ".pdf"))
 plt.show()

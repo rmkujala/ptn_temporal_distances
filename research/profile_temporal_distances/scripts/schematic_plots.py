@@ -1,3 +1,5 @@
+from copy import copy
+
 import settings
 from gtfspy.routing.label import LabelTimeSimple, LabelTimeWithBoardingsCount
 from gtfspy.routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
@@ -6,22 +8,31 @@ from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
 from gtfspy.routing.node_profile_simple import NodeProfileSimple
 import matplotlib.pyplot as plt
 
+from matplotlib import rc
+rc('text', usetex=True)
+
+labels_t_dep_dur_b = [
+    (8, 4, 2, "A"),   # A
+    (11, 4, 1, "B"),  # B
+    (15, 5, 2, "C"),  # C
+    (18, 4, 1, "D"),  # D
+    (21, 5, 1, "E"),  # E
+    (8, 6, 1, "F"),   # F (not on fastest path
+    (14, 7, 1, "G")  # G (not on fastest path)
+]
+labels_t_dep_dur_b = list(reversed(sorted(labels_t_dep_dur_b)))
+
+walk_to_target_duration = 10
+
 
 def plot_plain_profile():
-    # rc('text', usetex=True)
-    labels_raw = [
-        (12, 16),
-        (14, 20),
-        (17, 25),
-        (22, 26)
-    ]
     profile = NodeProfileSimple(walk_to_target_duration=10 * 60)
-    for label in labels_raw:
+    for label in labels_t_dep_dur_b:
         profile.update_pareto_optimal_tuples(
-            LabelTimeSimple(departure_time=label[0] * 60, arrival_time_target=label[1] * 60)
+            LabelTimeSimple(departure_time=label[0] * 60, arrival_time_target=(label[0] + label[1]) * 60)
         )
 
-    analyzer = NodeProfileAnalyzerTime(profile, 10 * 60, 20 * 60)
+    analyzer = NodeProfileAnalyzerTime(profile, 0 * 60, 20 * 60)
     fig = plt.figure(figsize=(8, 4))
     subplot_grid = (1, 6)
     ax1 = plt.subplot2grid(subplot_grid, (0, 0), colspan=4, rowspan=1)
@@ -43,6 +54,9 @@ def plot_plain_profile():
 
     ax1.set_ylim(0, 11)
     ax2.set_ylim(0, 11)
+    ax2.set_xlim(0, 0.3)
+    ax2.set_yticklabels(["" for _ in ax2.get_yticks()])
+    ax2.set_xticks([0, 0.1, 0.2, 0.3])
 
     ax1.set_xlabel("Departure time $t_{\\text{dep}}$ (min)")
     ax1.set_ylabel("Temporal distance $\\tau$ (min)")
@@ -51,27 +65,19 @@ def plot_plain_profile():
     # legend_order = [4, 3, 0, 1, 2]
     # handles = [handles[order] for order in legend_order]
     # labels = [labels[order] for order in legend_order]
-    ax1.legend(handles, labels, loc="lower center",
-              fancybox=False, ncol=2, shadow=False, prop={'size': 10})
+
+    ax1.legend(handles, labels, loc="best",
+               fancybox=True, ncol=2, shadow=False, prop={'size': 12})
     fig.tight_layout()
     plt.subplots_adjust(wspace=0.34)
-    fig.savefig(settings.RESULTS_DIRECTORY + "schematic_temporal_distance.pdf")
-    plt.show()
+    fig.savefig(settings.FIGS_DIRECTORY + "schematic_temporal_distance.pdf")
 
 
 def plot_transfer_profile():
-    labels_raw = [
-        (4, 14, 1),
-        (4, 8, 2),
-        (8, 8, 2),
-        (10, 17, 1),
-        (15, 27, 1),
-        (15, 15, 2),
-        (22, 14, 1),
-        (22, 12, 2)
-    ]
-    for label in labels_raw:
-        print(str(label[0]) + " & " + str(label[0] + label[1]) +
+    alphabetical_labels = list(labels_t_dep_dur_b)
+    alphabetical_labels.sort(key=lambda el: el[-1])
+    for label in alphabetical_labels:
+        print(label[-1] + " & " + str(label[0]) + " & " + str(label[0] + label[1]) +
               " & " + str(label[1]) + " & " + str(label[2]) + " \\\\")
 
     labels = [
@@ -79,32 +85,55 @@ def plot_transfer_profile():
                                     arrival_time_target=label[0] + label[1],
                                     n_boardings=label[2],
                                     first_leg_is_walk=False)
-        for label in labels_raw
-    ]
+        for label in labels_t_dep_dur_b
+        ]
 
     dep_times = list(set(map(lambda el: el.departure_time, labels)))
     p = NodeProfileMultiObjective(dep_times=dep_times,
-                                  walk_to_target_duration=30,
+                                  walk_to_target_duration=10,
                                   label_class=LabelTimeWithBoardingsCount)
 
-    for label in labels[::-1]:
+    for label in labels:
         p.update([label])
 
     p.finalize()
     analyzer = NodeProfileAnalyzerTimeAndVehLegs(p, 0, 20)
     print(analyzer.mean_n_boardings_on_shortest_paths())
 
+    journey_letters = [label[-1] for label in labels_t_dep_dur_b[::-1]]
+
+    fig = plt.figure(figsize=(8, 4))
+    subplot_grid = (1, 6)
+    ax1 = plt.subplot2grid(subplot_grid, (0, 0), colspan=4, rowspan=1)
     fig = analyzer.plot_new_transfer_temporal_distance_profile(format_string="%S",
                                                                duration_divider=1,
-                                                               default_lw=4)
+                                                               default_lw=4,
+                                                               journey_letters=journey_letters,
+                                                               ax=ax1,
+                                                               ncol_legend=2)
 
-    ax = fig.get_axes()[0]
-    ax.set_xlabel("Departure time $t_{\text{dep}}$ (min)")
-    ax.set_ylabel("Temporal distance $\tau$ (min)")
-    fig.savefig(settings.RESULTS_DIRECTORY + "schematic_transfer_profile.pdf")
+    ax1.set_xlabel("Departure time $t_{\\text{dep}}$ (min)")
+    ax1.set_ylabel("Temporal distance $\\tau$ (min)")
+
+    ax2 = plt.subplot2grid(subplot_grid, (0, 4), colspan=2, rowspan=1)
+    ax2 = analyzer.plot_temporal_distance_pdf_horizontal(use_minutes=True,
+                                                         duration_divider=1,
+                                                         ax=ax2)
+
+    ax2.set_ylabel("")
+
+    ax1.set_ylim(0, 11)
+    ax2.set_ylim(0, 11)
+    ax2.set_xlim(0, 0.3)
+    ax2.set_yticklabels(["" for _ in ax2.get_yticks()])
+    ax2.set_xlabel("Probability density $P(\\tau)$")
+    ax2.set_xticks([0, 0.1, 0.2, 0.3])
+
+    fig.tight_layout()
+    fig.savefig(settings.FIGS_DIRECTORY + "schematic_transfer_profile.pdf")
     plt.show()
 
 
 if __name__ == "__main__":
     plot_plain_profile()
-    # plot_transfer_profile()
+    plot_transfer_profile()
