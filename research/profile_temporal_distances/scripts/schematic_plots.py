@@ -7,6 +7,8 @@ from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAn
 from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
 from gtfspy.routing.node_profile_simple import NodeProfileSimple
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
+
 
 from matplotlib import rc
 rc('text', usetex=True)
@@ -24,6 +26,8 @@ labels_t_dep_dur_b = list(reversed(sorted(labels_t_dep_dur_b)))
 
 walk_to_target_duration = 10
 
+gs = gridspec.GridSpec(1, 6)
+gs.update(left=0.1, right=0.98, wspace=0.15, bottom=0.18)
 
 def plot_plain_profile():
     profile = NodeProfileSimple(walk_to_target_duration=10 * 60)
@@ -33,30 +37,33 @@ def plot_plain_profile():
         )
 
     analyzer = NodeProfileAnalyzerTime(profile, 0 * 60, 20 * 60)
-    fig = plt.figure(figsize=(8, 4))
-    subplot_grid = (1, 6)
-    ax1 = plt.subplot2grid(subplot_grid, (0, 0), colspan=4, rowspan=1)
-    fig = analyzer.plot_temporal_distance_profile(format_string="%M",
-                                                  plot_journeys=True,
-                                                  lw=3,
-                                                  ax=ax1,
-                                                  plot_tdist_stats=True,
-                                                  alpha=0.15,
-                                                  plot_trip_stats=False,
-                                                  duration_divider=60.0)
+    fig = plt.figure(figsize=(5.5, 3.5))
 
-    ax2 = plt.subplot2grid(subplot_grid, (0, 4), colspan=2, rowspan=1)
+
+    ax1 = plt.subplot(gs[:, :4])
+    analyzer.plot_temporal_distance_profile(format_string="%M",
+                                              plot_journeys=True,
+                                              lw=3,
+                                              ax=ax1,
+                                              plot_tdist_stats=True,
+                                              alpha=0.15,
+                                              plot_trip_stats=False,
+                                              duration_divider=60.0)
+
+    ax2 = plt.subplot(gs[:, 4:])
+    # ax2 = plt.subplot2grid(subplot_grid, (0, 4), colspan=2, rowspan=1)
     fig = analyzer.plot_temporal_distance_pdf_horizontal(use_minutes=True,
-                                                         ax=ax2)
+                                                         ax=ax2,
+                                                         legend_font_size=9)
 
     ax2.set_ylabel("")
     ax2.set_yticks([])
 
-    ax1.set_ylim(0, 11)
-    ax2.set_ylim(0, 11)
+    ax1.set_ylim(0, 11.5)
+    ax2.set_ylim(0, 11.5)
     ax2.set_xlim(0, 0.3)
     ax2.set_yticklabels(["" for _ in ax2.get_yticks()])
-    ax2.set_xticks([0, 0.1, 0.2, 0.3])
+    ax2.set_xticks([0.1, 0.2, 0.3])
 
     ax1.set_xlabel("Departure time $t_{\\text{dep}}$ (min)")
     ax1.set_ylabel("Temporal distance $\\tau$ (min)")
@@ -67,9 +74,17 @@ def plot_plain_profile():
     # labels = [labels[order] for order in legend_order]
 
     ax1.legend(handles, labels, loc="best",
-               fancybox=True, ncol=2, shadow=False, prop={'size': 12})
-    fig.tight_layout()
-    plt.subplots_adjust(wspace=0.34)
+               fancybox=True, ncol=2, shadow=False, prop={'size': 9})
+    for _ax, letter in zip([ax1, ax2], "AB"):
+        _ax.text(0.04, 0.98,
+                  "\\textbf{" + letter + "}",
+                  horizontalalignment="left",
+                  verticalalignment="top",
+                  transform=_ax.transAxes,
+                  fontsize=15,
+                  color="black")
+    # fig.tight_layout()
+    # plt.subplots_adjust(wspace=0.34)
     fig.savefig(settings.FIGS_DIRECTORY + "schematic_temporal_distance.pdf")
 
 
@@ -102,34 +117,44 @@ def plot_transfer_profile():
 
     journey_letters = [label[-1] for label in labels_t_dep_dur_b[::-1]]
 
-    fig = plt.figure(figsize=(8, 4))
+    fig = plt.figure(figsize=(5.5, 3.5))
     subplot_grid = (1, 6)
-    ax1 = plt.subplot2grid(subplot_grid, (0, 0), colspan=4, rowspan=1)
+
+    ax1 = plt.subplot(gs[:, :4])
     fig = analyzer.plot_new_transfer_temporal_distance_profile(format_string="%S",
                                                                duration_divider=1,
                                                                default_lw=4,
                                                                journey_letters=journey_letters,
                                                                ax=ax1,
-                                                               ncol_legend=2)
+                                                               ncol_legend=2,
+                                                               legend_font_size=9)
 
     ax1.set_xlabel("Departure time $t_{\\text{dep}}$ (min)")
     ax1.set_ylabel("Temporal distance $\\tau$ (min)")
 
-    ax2 = plt.subplot2grid(subplot_grid, (0, 4), colspan=2, rowspan=1)
+    ax2 = plt.subplot(gs[:, 4:])
     ax2 = analyzer.plot_temporal_distance_pdf_horizontal(use_minutes=True,
                                                          duration_divider=1,
-                                                         ax=ax2)
+                                                         ax=ax2,
+                                                         legend_font_size=9)
 
     ax2.set_ylabel("")
 
-    ax1.set_ylim(0, 11)
-    ax2.set_ylim(0, 11)
+    ax1.set_ylim(0, 11.5)
+    ax2.set_ylim(0, 11.5)
     ax2.set_xlim(0, 0.3)
     ax2.set_yticklabels(["" for _ in ax2.get_yticks()])
     ax2.set_xlabel("Probability density $P(\\tau)$")
-    ax2.set_xticks([0, 0.1, 0.2, 0.3])
+    ax2.set_xticks([0.1, 0.2, 0.3])
 
-    fig.tight_layout()
+    for _ax, letter in zip([ax1, ax2], "AB"):
+        _ax.text(0.04, 0.98,
+                  "\\textbf{" + letter + "}",
+                  horizontalalignment="left",
+                  verticalalignment="top",
+                  transform=_ax.transAxes,
+                  fontsize=15,
+                  color="black")
     fig.savefig(settings.FIGS_DIRECTORY + "schematic_transfer_profile.pdf")
     plt.show()
 

@@ -220,5 +220,5 @@ def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable
 
 
 if __name__ == "__main__":
-    plot_transfers()
+    pass
     # plot_temporal_distances()

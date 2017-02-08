@@ -89,7 +89,7 @@ for i, observable_name, title in zip(range(3), observable_names, titles):
     print(observable_values_to_plot)
     _plot_smopy(lats, lons, observable_values_to_plot,
                 title, sm, None, node_desc, ax=_i_to_ax[i], s=6, target_lats=target_lats, target_lons=target_lons,
-                target_marker_color=None)
+                target_marker_color="blue")
 
 cax = _i_to_ax[5]
 cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="minutes")

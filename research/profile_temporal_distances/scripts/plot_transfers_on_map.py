@@ -53,7 +53,6 @@ _i_to_ax = {
     4: plt.subplot(gs01[0, 13:24])
 }
 
-# plot max_n_boardings
 max_n_boardings = 5
 cmap = NodeProfileAnalyzerTimeAndVehLegs.get_colormap_for_boardings(max_n_boardings)
 norm = matplotlib.colors.Normalize(vmin=0, vmax=max_n_boardings)
@@ -95,7 +94,7 @@ for i, (observable_name, title) in enumerate(zip(observable_names_to_plot, title
 
     _plot_smopy(lats, lons, observable_values_to_plot,
                 title, sm, None, node_desc,
-                ax=_i_to_ax[i], target_lats=target_lats, target_lons=target_lons)
+                ax=_i_to_ax[i], target_lats=target_lats, target_lons=target_lons, target_marker_color="blue")
 
 # cax = _get_subplot(4)
 cax = _i_to_ax[5]
@@ -165,7 +164,8 @@ if journeys_instead_of_time_diff:
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="10%", pad=0.1)
     ax.set_title("Number of alternative journeys, $n_\\mathrm{journeys}$")
-    cbar = smopy_fig.colorbar(sm, cax=cax,
+    cbar = smopy_fig.colorbar(sm,
+                              cax=cax,
                               orientation="vertical")
 else:
     #### mean_temporal_distance_with_min_n_boardings - mean_temporal_distance
@@ -175,7 +175,8 @@ else:
     norm = matplotlib.colors.Normalize(vmin=0, vmax=max)
     sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([norm.vmin, norm.vmax])
-    difference = mean_temporal_distance_with_min_n_boardings - mean_temporal_distances
+    difference = (mean_temporal_distance_with_min_n_boardings - mean_temporal_distances)
+    # / (mean_n_boardings - min_n_boardings)
     difference /= 60.0
 
     difference[difference > max] = max
@@ -199,7 +200,7 @@ else:
     ax = _i_to_ax[4]
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="10%", pad=0.1)
-    ax.set_title("Difference, $\\tau_\\mathrm{mean} - \\tau_\\mathrm{mean,\\, least\\,\\,boardings}$")
+    ax.set_title("Difference, $\\tau_\\mathrm{mean} - \\tau_\\mathrm{mean,min. b}$")
     cbar = smopy_fig.colorbar(sm, cax=cax,
                               orientation="vertical", label="minutes")
 
