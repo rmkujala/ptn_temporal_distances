@@ -103,9 +103,17 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     ax1.legend(loc="best", prop={'size': 12})
     fig1.text(0.25 + 0.5 * i, 0.94, make_string_latex_friendly(title), ha="center", va="center", size=14)
 
-
     plt.figure(fig2.number)
     ax_1 = plt.subplot(gs[:, :4])
+    print("mean_temporal_distance: ", analyzer.mean_temporal_distance() / 60.0)
+    print("mean_temporal_distance_with_min_n_boardings: ", analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0)
+    time_diff =  analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0 - analyzer.mean_temporal_distance() / 60.0
+    print("difference in mean t: ", time_diff)
+    print("mean_n_boardings: ", analyzer.mean_n_boardings_on_shortest_paths())
+    boarding_diff = analyzer.mean_n_boardings_on_shortest_paths() - analyzer.min_n_boardings()
+    print("difference in boardings: ", boarding_diff)
+    print("gain per boarding: ", time_diff/boarding_diff)
+
     analyzer.plot_new_transfer_temporal_distance_profile(
         timezone=TIMEZONE,
         format_string="%H:%M",
@@ -116,10 +124,10 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     )
     ax_2 = plt.subplot(gs[:, 4:])
     if i == 0:
-        legend_loc="lower left"
+        legend_loc = "lower left"
     else:
-        legend_loc="center left"
-    analyzer.plot_temporal_distance_pdf_horizontal(ax=ax_2, legend_font_size=8, legend_loc=legend_loc)
+        legend_loc = "center left"
+    analyzer.plot_temporal_distance_pdf_horizontal(ax=ax_2, legend_font_size=9, legend_loc=legend_loc)
     fig2.text(0.25 + 0.5 * i, 0.94, make_string_latex_friendly(title), ha="center", va="center", size=14)
 
 
@@ -152,17 +160,15 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
         _ax2_xticks = [0.05, 0.10, 0.15]
         _ax2.set_xticks(_ax2_xticks)
         _ax2.set_xticklabels(["0.05", "0.10", "0.15"])
-
         plt.setp(_ax1.xaxis.get_majorticklabels(), rotation=40, ha="center")
+
 
 fig1_fname += "_fastest_trip_stats.pdf"
 fig1_fname = make_filename_nice(fig1_fname)
 fig2_fname += ".pdf"
 fig2_fname = make_filename_nice(fig2_fname)
 
-print(fig1_fname)
-print(fig2_fname)
 plt.show()
+
 fig1.savefig(fig1_fname)
 fig2.savefig(fig2_fname)
-

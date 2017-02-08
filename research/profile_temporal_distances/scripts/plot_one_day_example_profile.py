@@ -40,6 +40,7 @@ npa.plot_new_transfer_temporal_distance_profile(timezone=settings.TIMEZONE,
                                                 default_lw=1.5,
                                                 ncol_legend=1)
 
+
 ax1.set_ylabel("Temporal distance $\\tau$")
 ax1.set_title('From It\\"akeskus to Alvar Aalto\'s park')
 
@@ -68,5 +69,18 @@ for ax, letter, x in zip([ax1, ax2], "AB", [0.01, 0.04]):
 
 fig.tight_layout()
 fig.savefig(os.path.join(settings.FIGS_DIRECTORY, "long_profile_with_transfers.pdf"))
+
+
+analyzer = npa
+print("max_temporal_distance: ", analyzer.max_temporal_distance() / 60.0)
+print("min_temporal_distance: ", analyzer.min_temporal_distance() / 60.0)
+print("mean_temporal_distance: ", analyzer.mean_temporal_distance() / 60.0)
+print("mean_temporal_distance_with_min_n_boardings: ", analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0)
+time_diff = analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0 - analyzer.mean_temporal_distance() / 60.0
+print("difference in mean t: ", time_diff)
+print("mean_n_boardings: ", analyzer.mean_n_boardings_on_shortest_paths())
+boarding_diff = analyzer.mean_n_boardings_on_shortest_paths() - analyzer.min_n_boardings()
+print("difference in boardings: ", boarding_diff)
+print("gain per boarding: ", time_diff / boarding_diff)
 
 plt.show()
