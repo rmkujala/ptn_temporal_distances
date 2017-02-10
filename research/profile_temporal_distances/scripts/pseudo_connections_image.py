@@ -12,14 +12,15 @@ ax1 = plt.subplot2grid(subplot_grid, (0, 0), colspan=2, rowspan=1)
 
 ax2 = plt.subplot2grid(subplot_grid, (0, 2), colspan=4, rowspan=1)
 
+w = 0.5
 events = [
     ("a", "b", 0, 1, "green"),
-    ("b", "c", 2, 3, "green"),
-    ("c", "b", 4, 5, "green"),
+    ("b", "c", 2-w, 3, "green"),
+    ("c", "b", 4, 5+w, "green"),
     ("b", "a", 6, 7, "green"),
     ("a", "b", 8 + 0, 8 + 1, "green"),
-    ("b", "c", 8 + 2, 8 + 3, "green"),
-    ("c", "b", 8 + 4, 8 + 5, "green"),
+    ("b", "c", 8 + 2 -w, 8 + 3, "green"),
+    ("c", "b", 8 + 4, 8 + 5 + w, "green"),
     ("b", "a", 8 + 6, 8 + 7, "green"),
     ("d", "e", 4 - 4, 5 - 4, "red"),
     ("e", "d", 2, 3, "red"),
@@ -130,5 +131,5 @@ for name in ["green", "red"]:
     color = name_to_color[name]
 
 from settings import FIGS_DIRECTORY
-fig.savefig(os.path.join(FIGS_DIRECTORY, "temporal_network.svg"), format="svg")
+fig.savefig(os.path.join(FIGS_DIRECTORY, "temporal_network_base.svg"), format="svg")
 plt.show()
