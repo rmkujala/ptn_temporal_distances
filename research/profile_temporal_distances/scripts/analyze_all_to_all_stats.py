@@ -71,9 +71,9 @@ def _plot_2d_pdf(xvalues, yvalues, xbins, ybins, aspect='equal', ax=None):
                                            bins=xbins)
     # bin_medians, _, _ = binned_statistic(xvalues, yvalues, statistic='median', bins=xbins)
     bin_stdevs, _, _ = binned_statistic(xvalues, yvalues, statistic='std', bins=xbins)
-    ax.plot(bin_centers, bin_averages, ls="-", lw=3.0, color="red", alpha=0.8, label="mean")
-    ax.plot(bin_centers, percentile_5, ls="--", lw=3.0, color="red", alpha=0.8, label="5th and 95th percentile")
-    ax.plot(bin_centers, percentile_95, ls="--", lw=3.0, color="red", alpha=0.8)  # , label="95th percentile")
+    ax.plot(bin_centers, bin_averages, ls="-", lw=3.0, color="#FF3EB6", alpha=0.8, label="mean")
+    ax.plot(bin_centers, percentile_5, ls="--", lw=3.0, color="#FF3EB6", alpha=0.8, label="5th and 95th percentile")
+    ax.plot(bin_centers, percentile_95, ls="--", lw=3.0, color="#FF3EB6", alpha=0.8)  # , label="95th percentile")
     # ax.plot(bin_centers, bin_medians, ls="--", color="green", label="median")
     ax.set_xlim(0, 180)
     ax.set_ylim(0, 180)
@@ -106,8 +106,9 @@ def _load_data():
         )
         # print(matrix.shape)
         # print(rands.shape)
-        # print("Taking only a small sample for faster plot devevelopment!")
+        # print("Taking only a small sample for faster plot development!")
         # matrix = matrix[rands]
+
         print(matrix.shape)
         observable_to_matrix[observable] = matrix
 
@@ -367,7 +368,7 @@ def plot_boarding_count_distributions(ax1, min_nboardings, mean_n_nboardings_fp,
             hist = hist / numpy.sum(hist)
             ax.bar(bin_edges[:-1], hist, width=bin_edges[1]-bin_edges[0], edgecolor="k", label=label, lw=lw, facecolor=color)
 
-        leg = ax.legend(loc="best", fancybox=True)
+        leg = ax.legend(loc="best", fancybox=True, prop={'size':10})
         leg.get_frame().set_alpha(0.9)
 
 
@@ -427,7 +428,8 @@ def plot_boarding_count_distributions_old(ax, min_nboardings, mean_n_boardings_f
 
 if __name__ == "__main__":
     time_bins, flattened_time_valid_dict = _load_data()
-    fig = plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(11, 5))
+    plt.subplots_adjust(wspace=0.26, hspace=0.30, left=0.05, bottom=0.10, top=0.9, right=0.98, )
 
     ax1 = fig.add_subplot(2, 3, 1)
     plot_min_tdist_pdf(ax1,
@@ -484,15 +486,15 @@ if __name__ == "__main__":
         if ax is ax4:
             y = 0.85
         else:
-            y = 0.96
+            y = 0.94
         ax.text(0.04, y, "\\textbf{" + letter + "}",
                 horizontalalignment="left",
                 verticalalignment="top",
                 transform=ax.transAxes,
-                fontsize=15,
+                fontsize=12,
                 color="black",
                 backgroundcolor="white")
 
-    fig.tight_layout()
+    # fig.tight_layout()
     fig.savefig(settings.FIGS_DIRECTORY + "all_to_all_stats.pdf")
     plt.show()

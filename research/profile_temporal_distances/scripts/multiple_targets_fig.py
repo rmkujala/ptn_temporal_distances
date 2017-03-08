@@ -22,8 +22,7 @@ from settings import HELSINKI_NODES_FNAME
 from matplotlib import rc
 rc("text", usetex=True)
 
-recompute_all = False
-
+recompute_all = True
 
 def get_swimming_halls():
     url = "http://www.hel.fi/palvelukarttaws/rest/v2/unit/?service=33462"
@@ -63,7 +62,7 @@ def plot_smopy(lats, lons, observable_values_in_minutes,
     ax.set_title(observable_name)
     return ax
 
-use_swimming_halls = False
+use_swimming_halls = True
 
 if use_swimming_halls:
     fname = os.path.join(RESULTS_DIRECTORY, "swimming_halls_json.pickle")
@@ -77,12 +76,6 @@ else:
     fname_postfix = "train_stations"
 
 closest_stops_fname = os.path.join(RESULTS_DIRECTORY, "multiple_targets_closest_nodes_" + fname_postfix + ".pickle")
-
-# with open("/Users/rmkujala/Desktop/uimahallit.csv", 'w') as f:
-#     f.write("name,lat, lon\n")
-#     for swimming_hall in swimming_halls:
-#         f.write(str(swimming_hall['name_en']) + "," + str(swimming_hall['latitude']) + "," + str(swimming_hall['longitude']) + "\n")
-
 
 
 def get_closest_nodes():
@@ -181,11 +174,20 @@ for i, (observable, lims, title, cmap, ax, cax) in enumerate(
 
 fig.savefig(os.path.join(RESULTS_DIRECTORY, "multiple_targets.pdf"))
 
+for cax in caxs[:1]:
+    yticklabels = cax.get_yticklabels()
+    last_label = yticklabels[-1]
+    last_label.set_text(u"$\\geq$ " + last_label.get_text())
+    yticklabels[-1] = last_label
+    cax.set_yticklabels(yticklabels)
+
 for ax, cax, letter in zip(axs, caxs, "ABCDE"):
     ax0, ay0, aw1, ah1 = ax.get_position().bounds
     cx0, cy0, cw1, ch1 = cax.get_position().bounds
+
     print(cx0, ay0, cw1, ah1)
     cax.set_position([cx0, ay0, (cw1) / 2., ah1])
+
     ax.text(0.04, 0.96, "\\textbf{" + letter + "}",
             horizontalalignment="left",
             verticalalignment="top",

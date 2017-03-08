@@ -15,6 +15,8 @@ from settings import OTANIEMI_STOP_ID, HELSINKI_NODES_FNAME, FIGS_DIRECTORY
 from matplotlib import rc
 import os
 
+caxs = []
+
 rc("text", usetex=True)
 
 targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
@@ -25,7 +27,7 @@ target_lats = targets_info['lat']
 target_lons = targets_info['lon']
 
 print(len(nodes))
-data = get_node_profile_statistics(targets, recompute=False, recompute_profiles=False)
+data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=True)
 observable_name_to_data = data
 min_temporal_distances = numpy.array(data["min_temporal_distance"])
 mean_temporal_distances = numpy.array(data["mean_temporal_distance"])
@@ -47,7 +49,7 @@ _i_to_ax = {
     0: plt.subplot(gs00[0, 0:3]),
     1: plt.subplot(gs00[0, 3:6]),
     2: plt.subplot(gs00[0, 6:9]),
-    5: smopy_fig.add_axes([0.89, 0.575, 0.03, 0.365]),
+    5: smopy_fig.add_axes([0.897, 0.575, 0.03, 0.365]),
     3: plt.subplot(gs01[0, 0:11]),
     4: plt.subplot(gs01[0, 13:24])
 }
@@ -92,6 +94,7 @@ for i, observable_name, title in zip(range(3), observable_names, titles):
                 target_marker_color="blue")
 
 cax = _i_to_ax[5]
+caxs.append(cax)
 cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="minutes")
 
 # DIFFERENCES
@@ -125,6 +128,7 @@ ax = _i_to_ax[3]
 ax.set_title("Difference, $\\tau_\\mathrm{mean}-\\tau_\\mathrm{min}$")
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="10%", pad=0.1)
+caxs.append(cax)
 cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="minutes")
 
 # RELATIVE DIFFERENCES
@@ -155,9 +159,11 @@ ax = _plot_smopy(lats, lons, observable_values_to_plot, "", sm, None, node_desc,
 ax = _i_to_ax[4]
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="10%", pad=0.1)
+caxs.append(cax)
 ax.set_title("Relative difference, $(\\tau_\\mathrm{mean}-\\tau_\\mathrm{min}) / \\tau_\\mathrm{min}$")
 cbar = smopy_fig.colorbar(sm, cax=cax,
                           orientation="vertical")  # , label="$(\\tau_\\mathrm{mean}-\\tau_\\mathrm{min}) / \\tau_\\mathrm{min}$")
+
 
 for i, letter in zip(range(5), "ABCDE"):
     ax = _i_to_ax[i]
@@ -168,5 +174,16 @@ for i, letter in zip(range(5), "ABCDE"):
             fontsize=15,
             color="white")
 
+
+
+for cax in caxs:
+    yticklabels = cax.get_yticklabels()
+    last_label = yticklabels[-1]
+    last_label.set_text(u"$\\geq$ " + last_label.get_text())
+    yticklabels[-1] = last_label
+    cax.set_yticklabels(yticklabels)
+
 smopy_fig.savefig(os.path.join(FIGS_DIRECTORY, "temporal_distances_on_map.pdf"))
+smopy_fig.savefig(os.path.join(FIGS_DIRECTORY, "temporal_distances_on_map.png"), dpi=600)
+
 plt.show()

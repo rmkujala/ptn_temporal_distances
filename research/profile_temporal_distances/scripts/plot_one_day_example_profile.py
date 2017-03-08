@@ -1,5 +1,7 @@
 import os
 
+import pickle
+
 import settings
 from matplotlib import pyplot as plt
 
@@ -11,25 +13,34 @@ from matplotlib import rc
 
 rc("text", usetex=True)
 
-fname = os.path.join(settings.RESULTS_DIRECTORY, "long_profiles.pkl")
-params = {
-    "targets": [settings.OTANIEMI_STOP_ID],
-    "routing_start_time_dep": settings.DAY_START,
-    "routing_end_time_dep": settings.DAY_END
-}
+recompute = True
+itakeskus_profile_fname = os.path.join(settings.RESULTS_DIRECTORY, "itakeskus_profile.pickle")
+try:
+    if recompute:
+        raise RuntimeError("Recomputing!")
+    itakeskus_profile = pickle.load(open(itakeskus_profile_fname, 'rb'))
+except:
+    fname = os.path.join(settings.RESULTS_DIRECTORY, "long_profiles.pkl")
+    print(fname)
+    params = {
+        "targets": [settings.OTANIEMI_STOP_ID],
+        "routing_start_time_dep": settings.DAY_START,
+        "routing_end_time_dep": settings.DAY_END
+    }
 
-data = get_data_or_compute(fname, _compute_profile_data, recompute=False, **params)
+    data = get_data_or_compute(fname, _compute_profile_data, recompute=recompute, **params)
 
-print(data["params"])
+    print(data["params"])
 
-profiles = data["profiles"]
-itakeskus_profile = profiles[settings.ITAKESKUS_STOP_ID]
+    profiles = data["profiles"]
+    itakeskus_profile = profiles[settings.ITAKESKUS_STOP_ID]
+    pickle.dump(itakeskus_profile, open(itakeskus_profile_fname, 'wb'), -1)
 
 npa = NodeProfileAnalyzerTimeAndVehLegs(itakeskus_profile,
                                         settings.DAY_START + 6 * 3600,
                                         settings.DAY_START + 21 * 3600)
 
-fig = plt.figure(figsize=(12, 4))
+fig = plt.figure(figsize=(11, 3.5))
 subplot_grid = (1, 8)
 ax1 = plt.subplot2grid(subplot_grid, (0, 0), colspan=6, rowspan=1)
 npa.plot_new_transfer_temporal_distance_profile(timezone=settings.TIMEZONE,
@@ -49,7 +60,8 @@ ax1.set_ylabel("Temporal distance $\\tau$ (min)")
 
 ax2 = plt.subplot2grid(subplot_grid, (0, 6), colspan=2, rowspan=1)
 ax2 = npa.plot_temporal_distance_pdf_horizontal(use_minutes=True,
-                                                ax=ax2)
+                                                ax=ax2,
+                                                legend_font_size=11)
 ax1.set_ylim(0, 70)
 ax2.set_ylim(0, 70)
 

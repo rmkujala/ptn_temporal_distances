@@ -16,7 +16,11 @@ from settings import OTANIEMI_STOP_ID, HELSINKI_NODES_FNAME, FIGS_DIRECTORY
 from matplotlib import rc
 import os
 
+
+
 rc("text", usetex=True)
+
+caxs = []
 
 targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
 nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
@@ -24,7 +28,7 @@ targets_info = nodes[nodes.stop_I.isin(targets)]
 target_lats = targets_info['lat']
 target_lons = targets_info['lon']
 
-data = get_node_profile_statistics(targets, recompute=False, recompute_profiles=False)
+data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=True)
 observable_name_to_data = data
 
 min_n_boardings = numpy.array(data["min_n_boardings"])
@@ -48,7 +52,7 @@ _i_to_ax = {
     0: plt.subplot(gs00[0, 0:3]),
     1: plt.subplot(gs00[0, 3:6]),
     2: plt.subplot(gs00[0, 6:9]),
-    5: smopy_fig.add_axes([0.89, 0.575, 0.03, 0.365]),
+    5: smopy_fig.add_axes([0.897, 0.575, 0.03, 0.365]),
     3: plt.subplot(gs01[0, 0:11]),
     4: plt.subplot(gs01[0, 13:24])
 }
@@ -98,6 +102,7 @@ for i, (observable_name, title) in enumerate(zip(observable_names_to_plot, title
 
 # cax = _get_subplot(4)
 cax = _i_to_ax[5]
+caxs.append(cax)
 cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="Number of boardings")
 cbar.set_ticks(range(0, max_n_boardings + 1))
 
@@ -131,6 +136,7 @@ ax = _i_to_ax[3]
 ax.set_title("Difference, $b_\\mathrm{mean\\,f.p.}-b_\\mathrm{min}$")
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="10%", pad=0.1)
+caxs.append(cax)
 cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical")
 
 # NUMBER OF JOURNEYS OR ( mean_temporal_distance_with_min_n_boardings - mean_temporal_distance)
@@ -163,6 +169,7 @@ if journeys_instead_of_time_diff:
     ax = _i_to_ax[4]
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="10%", pad=0.1)
+    caxs.append(cax)
     ax.set_title("Number of alternative journeys, $n_\\mathrm{journeys}$")
     cbar = smopy_fig.colorbar(sm,
                               cax=cax,
@@ -200,6 +207,7 @@ else:
     ax = _i_to_ax[4]
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="10%", pad=0.1)
+    caxs.append(cax)
     ax.set_title("Difference, $\\tau_\\mathrm{mean} - \\tau_\\mathrm{mean,min. b}$")
     cbar = smopy_fig.colorbar(sm, cax=cax,
                               orientation="vertical", label="minutes")
@@ -212,6 +220,13 @@ for i, letter in zip(range(5), "ABCDE"):
             transform=ax.transAxes,
             fontsize=15,
             color="white")
+
+for cax in caxs:
+    yticklabels = cax.get_yticklabels()
+    last_label = yticklabels[-1]
+    last_label.set_text(u"$\\geq$ " + last_label.get_text())
+    yticklabels[-1] = last_label
+    cax.set_yticklabels(yticklabels)
 
 plt.show()
 smopy_fig.savefig(os.path.join(FIGS_DIRECTORY, "transfers_on_map.pdf"))

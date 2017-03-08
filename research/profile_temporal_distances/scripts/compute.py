@@ -40,7 +40,6 @@ def get_profile_data(targets=None, recompute=False, **kwargs):
 
 
 def get_node_profile_statistics(targets, recompute=False, recompute_profiles=False):
-
     profile_statistics_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_statistics_" +
                                             target_list_to_str(targets) + ".pickle")
     if recompute_profiles:
@@ -87,8 +86,9 @@ def _read_connections_csv(routing_start_time, routing_end_time):
         for row in events_reader:
             dep_time = int(row[dep_time_index])
             if routing_start_time <= dep_time <= routing_end_time:
-                connections.append(Connection(int(row[from_node_index]), int(row[to_node_index]), int(row[dep_time_index]),
-                                              int(row[arr_time_index]), int(row[trip_I_index])))
+                connections.append(
+                    Connection(int(row[from_node_index]), int(row[to_node_index]), int(row[dep_time_index]),
+                               int(row[arr_time_index]), int(row[trip_I_index])))
     connections = sorted(connections, key=lambda conn: -conn.departure_time)
     return connections
 
@@ -162,8 +162,6 @@ def _get_new_csp(targets=None, params=None, verbose=True):
         verbose=verbose,
         transfer_margin=params["transfer_margin"]
     )
-
-
     return csp, params
 
 
@@ -201,6 +199,7 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
         "max_walk_distance": max_walk_distance,
         "targets": targets
     }
+
     if csp is None:
         csp, params = _get_new_csp(targets=targets, params=params, verbose=verbose)
     else:
@@ -210,10 +209,9 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
     csp.run()
     print("CSA profiler finished")
 
-
     profiles = {"params": params,
                 "profiles": dict(csp.stop_profiles)
-    }
+                }
     if return_profiler:
         return profiles, csp
     return profiles
@@ -222,8 +220,6 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
 def _compute_node_profile_statistics(targets, recompute_profiles=False):
     profile_data = get_profile_data(targets, recompute=recompute_profiles)['profiles']
     return __compute_profile_stats_from_profiles(profile_data)
-
-
 
 
 def __compute_profile_stats_from_profiles(profile_data):
@@ -261,6 +257,7 @@ def __compute_profile_stats_from_profiles(profile_data):
             observable_name_to_data[observable_name].append(observable_value)
     return observable_name_to_data
 
+
 def _assert_results_are_positive_if_not_infs_or_nans(value):
     is_nan = numpy.isnan(value)
     is_inf = numpy.isinf(value)
@@ -282,7 +279,8 @@ def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=
             continue
 
         obs_name_to_data = __compute_profile_stats_from_profiles(data["profiles"])
-        fname = os.path.join(RESULTS_DIRECTORY, "all_to_all_stats", "all_to_all_stats_target_{target}.pkl".format(target=str(target_I)))
+        fname = os.path.join(RESULTS_DIRECTORY, "all_to_all_stats",
+                             "all_to_all_stats_target_{target}.pkl".format(target=str(target_I)))
         to_store = {
             "target": target_I,
             "params": data["params"],

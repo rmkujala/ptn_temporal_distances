@@ -87,6 +87,7 @@ def get_data_or_compute(fname, comp_func, *args, **kwargs):
         if recompute:
             raise RuntimeError("Recompute!")
         with open(fname, "rb") as f:
+            print("loading data")
             data = pickle.load(f)
     except (RuntimeError, TypeError, EOFError, IOError) as e:
         print("Data not found, computing; error message was:" + str(e))

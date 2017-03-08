@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import numpy
+
 import settings
 
 """
@@ -37,7 +39,7 @@ params = {
 }
 
 fname = os.path.join(RESULTS_DIRECTORY, "example_profiles.pickle")
-profile_data = get_data_or_compute(fname, _compute_profile_data, recompute=False, **params)
+profile_data = get_data_or_compute(fname, _compute_profile_data, recompute=True, **params)
 
 # profile_data = get_profile_data([target_stop_I], recompute=True, track_vehicle_legs=True)
 print(profile_data["params"])
@@ -91,6 +93,11 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
 
     plt.figure(fig1.number)
     ax1 = plt.subplot(gs[:, :4])
+    dep_times = numpy.array(analyzer.get_time_profile_analyzer().trip_departure_times) / 60 % 60
+    print(dep_times[1:] - dep_times[:-1])
+    print(numpy.array(analyzer.get_time_profile_analyzer().trip_departure_times) / 60 % 60)
+    print(numpy.array(analyzer.get_time_profile_analyzer().trip_durations) / 60.0)
+
     fig1 = analyzer.plot_fastest_temporal_distance_profile(timezone=TIMEZONE,
                                                            plot_tdist_stats=True,
                                                            format_string="%H:%M",
@@ -107,12 +114,11 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     ax_1 = plt.subplot(gs[:, :4])
     print("mean_temporal_distance: ", analyzer.mean_temporal_distance() / 60.0)
     print("mean_temporal_distance_with_min_n_boardings: ", analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0)
-    time_diff =  analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0 - analyzer.mean_temporal_distance() / 60.0
+    time_diff = analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0 - analyzer.mean_temporal_distance() / 60.0
     print("difference in mean t: ", time_diff)
     print("mean_n_boardings: ", analyzer.mean_n_boardings_on_shortest_paths())
     boarding_diff = analyzer.mean_n_boardings_on_shortest_paths() - analyzer.min_n_boardings()
     print("difference in boardings: ", boarding_diff)
-    print("gain per boarding: ", time_diff/boarding_diff)
 
     analyzer.plot_new_transfer_temporal_distance_profile(
         timezone=TIMEZONE,
@@ -130,8 +136,7 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     analyzer.plot_temporal_distance_pdf_horizontal(ax=ax_2, legend_font_size=9, legend_loc=legend_loc)
     fig2.text(0.25 + 0.5 * i, 0.94, make_string_latex_friendly(title), ha="center", va="center", size=14)
 
-
-    for _ax1, _ax2 in zip([ax1, ax_1], [ax2, ax_2]):
+    for i, (_ax1, _ax2) in enumerate(zip([ax1, ax_1], [ax2, ax_2])):
         _ax1.set_ylim(0, 70)
         _ax2.set_ylim(0, 70)
         _ax2.set_yticklabels(["" for i in ax2.get_yticks()])
@@ -157,7 +162,10 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
                   fontsize=15,
                   color="black")
 
-        _ax2_xticks = [0.05, 0.10, 0.15]
+        if i is 0:
+            _ax2_xticks = [0.10, 0.20]
+        else:
+            _ax2_xticks = [0.05, 0.10, 0.15]
         _ax2.set_xticks(_ax2_xticks)
         _ax2.set_xticklabels(["0.05", "0.10", "0.15"])
         plt.setp(_ax1.xaxis.get_majorticklabels(), rotation=40, ha="center")
