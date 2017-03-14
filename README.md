@@ -4,53 +4,52 @@ This repository contains the scripts (written in Python 3) used for producing th
 comprehensive accessibility analysis based on Pareto-optimal journeys"
 
 ### License
-All scripts (under scripts/) are free to use (MIT license).
+All scripts (under `scripts/`) are free to use in accordance with the MIT license.
 
-### Ackwnoledgment
+### Acknowledgment
 If you use these scripts, please cite our paper or give appropriate acknowledgement otherwise.
 (Details on citing the paper will be added once the paper has been published.)
 
 ## Data
-The data for running the analyses are provided under data/
+The data for running the analyses are provided under `data/`
 The original source data (events and stops) for our analyses consitst of GTFS-data and OpenStreetMap extracts:
 - The original GTFS data has been downloaded from the Reittiopas API (http://developer.reittiopas.fi/pages/en/other-apis.php)
-- The OpenStreetMap data was downloaded from https://www.geofabrik.de/data/download.html (Open Database License 1.0.)
+- The OpenStreetMap data was downloaded from http://www.geofabrik.de/data/download.html (Open Database License 1.0.)
     (used for computing walking distances)
 
-
 ## Dependencies
-The preprocessing of the source data, and all scripts in this repository use the gtfspy Python package (https://github.com/CxAalto/gtfspy), which is also included as an explicit git-submodule dependency to this repository.
-Note that, since the creation/run of the analysis scripts in these repository, the gtfspy package has improved, and thus this repository should not be considered as a long-term model example how to work with gtfspy.
-See the examples within the gtfspy package itself.
+The preprocessing of the source data, and all scripts in this repository use the gtfspy Python package (https://github.com/CxAalto/gtfspy), which is also included as an explicit git-submodule dependency in this repository.
+Note that, since the creation/run of the analysis scripts in these repository, the gtfspy package has improved, and thus this repository should not be considered as a long-term model example how to work with `gtfspy`.
+See the examples within the `gtfspy` package itself.
 
 Dependencies include:
-- smopy  (https://github.com/rossant/smopy)
-- pandas
-- numpy
-- matplotlib
-- Cython
-- requests
+- `smopy`  (https://github.com/rossant/smopy)
+- `pandas`
+- `numpy`
+- `matplotlib`
+- `Cython`
+- `requests`
 
 ## Scripts
 
 ### Modules used by all / most analysis scripts
-- settings.py
+- `settings.py`
     - Shared settings for the analyses
-- compute.py
+- `compute.py`
     - Shared computation and caching pipelines for the analyses.
-- util.py
+- `util.py`
     - Miscellanous shared utility functions.
 
 ### Analyzes
-- plot_one_day_example_profile.py
+- `plot_one_day_example_profile.py`
     - Compute and plot one long (6AM-9PM) temporal distance profile augmented with boarding-counts.
-- plot_temporal_distance_profiles.py
+- `plot_temporal_distance_profiles.py`
     - Compute and plot two examples of temporal distance profiles with and without boarding-count information.
-- plot_transfers_on_map.py
+- `plot_transfers_on_map.py`
     - Compute and plot boardings counts on a map.
-- temporal_distances_map.py
+- `temporal_distances_map.py`
     - Compute and plot temporal distance statistics on a map.
-- multiple_targets_fig.py
+- `multiple_targets_fig.py`
     - Compute and plot mean temporal distance and mean number of transfers on fastest-paths towards multiple locations.
 
 ### All-to-all analyses
@@ -74,3 +73,6 @@ Dependencies include:
     - Plot schematic examples of temporal distance profiles.
 - schematic_temporal_network_image.py
     - Plot a crude node-time diagram of a list of events.
+
+## Author / Point of contact:
+Rainer Kujala (Rainer.Kujala@gmail.com; @rmkujala)
