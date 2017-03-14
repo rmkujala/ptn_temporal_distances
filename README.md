@@ -53,25 +53,25 @@ Dependencies include:
     - Compute and plot mean temporal distance and mean number of transfers on fastest-paths towards multiple locations.
 
 ### All-to-all analyses
-- all_to_all_slurm.sh
-    - A script for submitting a batch job to Triton cluster (at Aalto University) for performing all-to-all analyses (calls compute_all_to_all_stats.py)
-- compute_all_to_all_stats.py
+- `all_to_all_slurm.sh`
+    - A script for submitting a batch job to Triton cluster (at Aalto University) for performing all-to-all analyses (calls `compute_all_to_all_stats.py`)
+- `compute_all_to_all_stats.py`
     - A short script steering the all-to-all computations in Python
-- analyze_all_to_all_stats.py
+- `analyze_all_to_all_stats.py`
     - Analyze the results produced by compute_all_to_all_stats.py
-- slurm_submit_command.txt
+- `slurm_submit_command.txt`
     - A reminder how to submit the batch job to Triton
 
 ### Other analyses
-- plot_temporal_distance_profiles_simple_verification.py
+- `plot_temporal_distance_profiles_simple_verification.py`
     - Plot fastest-path temporal distance profiles using a simple profiler that only tracks time.
-- plot_profiles_on_a_map.py
+- `plot_profiles_on_a_map.py`
     - Old legacy code that was no longer used.
 
 ### Schematic plots
-- schematic_plots.py
+- `schematic_plots.py`
     - Plot schematic examples of temporal distance profiles.
-- schematic_temporal_network_image.py
+- `schematic_temporal_network_image.py`
     - Plot a crude node-time diagram of a list of events.
 
 ## Author / Point of contact:
