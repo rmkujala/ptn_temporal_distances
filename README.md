@@ -19,10 +19,13 @@ The original source data (events and stops) for our analyses consitst of GTFS-da
 
 ## Dependencies
 The preprocessing of the source data, and all scripts in this repository use the gtfspy Python package (https://github.com/CxAalto/gtfspy), which is also included as an explicit git-submodule dependency in this repository.
-Note that, since the creation/run of the analysis scripts in these repository, the gtfspy package has improved, and thus this repository should not be considered as a long-term model example how to work with `gtfspy`.
-See the examples within the `gtfspy` package itself.
+Note that, since the creation/run of the analysis scripts in these repository, the gtfspy package has most likely improved / changed, and thus this repository should not be considered as a long-term model example how to work with `gtfspy`.
+For introduction on how to use `gtfspy`, see the documentation in that package.
 
-Dependencies include:
+Moreover, the code in this repository is not necessarily compatible with the most recent version of the `gtfspy` package.
+The only version of `gtfspy` package that these scripts are guaranteed to work with is the one accompanied with the git-submodule dependency.
+
+Other (more standard) dependencies include:
 - `smopy`  (https://github.com/rossant/smopy)
 - `pandas`
 - `numpy`
