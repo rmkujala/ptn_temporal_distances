@@ -23,7 +23,7 @@ Note that, since the creation/run of the analysis scripts in these repository, t
 For introduction on how to use `gtfspy`, see the documentation in that package.
 
 Moreover, the code in this repository is not necessarily compatible with the most recent version of the `gtfspy` package.
-The only version of `gtfspy` package that these scripts are guaranteed to work with is the one accompanied with the git-submodule dependency.
+The only version of `gtfspy` package that these scripts are guaranteed to work with is the accompanying git-submodule dependency.
 
 Other (more standard) dependencies include:
 - `smopy`  (https://github.com/rossant/smopy)
