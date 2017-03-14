@@ -1,45 +1,40 @@
-from __future__ import unicode_literals
-
-import numpy
-
-import settings
-
-"""
-Plot temporal distances based on pre-computed node-profiles
-"""
-import pandas
 import os
 
-from gtfspy.routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
-from gtfspy.routing.label import LabelTimeWithBoardingsCount
-from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
-from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
-from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP, TIMEZONE
-from settings import OTANIEMI_STOP_ID, ITAKESKUS_STOP_ID, MUNKKIVUORI_STOP_ID
-from settings import FIGS_DIRECTORY, RESULTS_DIRECTORY
-from compute import _compute_profile_data
-from matplotlib import pyplot as plt
+import numpy
+import pandas
 from matplotlib import gridspec
+from matplotlib import pyplot as plt
+from matplotlib import rc
 
+import settings
+from compute import _compute_profile_data
+from gtfspy.routing.label import LabelTimeWithBoardingsCount
+from gtfspy.routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
+from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
+from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
+from settings import AALTO_STOP_ID, ITAKESKUS_STOP_ID, MUNKKIVUORI_STOP_ID
+from settings import FIGS_DIRECTORY, RESULTS_DIRECTORY
+from settings import HELSINKI_NODES_FNAME, ANALYSIS_START_TIME_DEP, ANALYSIS_END_TIME_DEP, TIMEZONE
 from util import make_filename_nice, make_string_latex_friendly, get_data_or_compute
 
-from matplotlib import rc
+"""
+Code for plotting the real-world temporal distance profile examples shown in the paper.
+This script is somewhat unnecessarily complicated, and is probably not a good intro how to work with gtfspy.
+"""
+
 
 rc("text", usetex=True)
 
-target_stop_I = OTANIEMI_STOP_ID
-# Some old ones:
-# 3373 Innopoli | Pasila 532 | Kamppi 115 | Piispanaukio 3491
-
+target_stop_I = AALTO_STOP_ID
 
 params = {
-    "targets": [settings.OTANIEMI_STOP_ID],
+    "targets": [settings.AALTO_STOP_ID],
     "routing_start_time_dep": settings.ROUTING_START_TIME_DEP,
     "routing_end_time_dep": settings.ROUTING_END_TIME_DEP
 }
 
 fname = os.path.join(RESULTS_DIRECTORY, "example_profiles.pickle")
-profile_data = get_data_or_compute(fname, _compute_profile_data, recompute=True, **params)
+profile_data = get_data_or_compute(fname, _compute_profile_data, recompute=False, **params)
 
 # profile_data = get_profile_data([target_stop_I], recompute=True, track_vehicle_legs=True)
 print(profile_data["params"])
@@ -55,8 +50,8 @@ from_stop_Is = [
     # 3063,   # Kilon asema
     # 5935,   # Sorvatie
     # 3101,   # lahderannanristi
-    # 3373,     # Innopoli
-    # 2843      # Vallikatu (Pohjois-Leppavaara)
+    # 3373,   # Innopoli
+    # 2843    # Vallikatu (Pohjois-Leppavaara)
     ITAKESKUS_STOP_ID,
     MUNKKIVUORI_STOP_ID
 ]
@@ -77,6 +72,7 @@ gs1.update(left=0.05, right=0.48, wspace=0.15, bottom=0.22)
 gs2 = gridspec.GridSpec(1, 6)
 gs2.update(left=0.55, right=0.98, wspace=0.15, bottom=0.2)
 
+# Loop over from_stop_Is
 for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     from_stop_name = nodes[nodes["stop_I"] == from_stop_I]["name"].values[0]
     fig1_fname += from_stop_name + "_"
@@ -94,9 +90,6 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     plt.figure(fig1.number)
     ax1 = plt.subplot(gs[:, :4])
     dep_times = numpy.array(analyzer.get_time_profile_analyzer().trip_departure_times) / 60 % 60
-    print(dep_times[1:] - dep_times[:-1])
-    print(numpy.array(analyzer.get_time_profile_analyzer().trip_departure_times) / 60 % 60)
-    print(numpy.array(analyzer.get_time_profile_analyzer().trip_durations) / 60.0)
 
     fig1 = analyzer.plot_fastest_temporal_distance_profile(timezone=TIMEZONE,
                                                            plot_tdist_stats=True,
@@ -112,8 +105,11 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
 
     plt.figure(fig2.number)
     ax_1 = plt.subplot(gs[:, :4])
+
+    # Print fastest-path temporal distance statistics:
     print("mean_temporal_distance: ", analyzer.mean_temporal_distance() / 60.0)
-    print("mean_temporal_distance_with_min_n_boardings: ", analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0)
+    print("mean_temporal_distance_with_min_n_boardings: ",
+          analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0)
     time_diff = analyzer.mean_temporal_distance_with_min_n_boardings() / 60.0 - analyzer.mean_temporal_distance() / 60.0
     print("difference in mean t: ", time_diff)
     print("mean_n_boardings: ", analyzer.mean_n_boardings_on_shortest_paths())
@@ -128,6 +124,7 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
         default_lw=3,
         fastest_path_lw=3
     )
+
     ax_2 = plt.subplot(gs[:, 4:])
     if i == 0:
         legend_loc = "lower left"
@@ -136,10 +133,11 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
     analyzer.plot_temporal_distance_pdf_horizontal(ax=ax_2, legend_font_size=9, legend_loc=legend_loc)
     fig2.text(0.25 + 0.5 * i, 0.94, make_string_latex_friendly(title), ha="center", va="center", size=14)
 
-    for i, (_ax1, _ax2) in enumerate(zip([ax1, ax_1], [ax2, ax_2])):
+    # Annotate axes using letters, and adjust plots
+    for ii, (_ax1, _ax2) in enumerate(zip([ax1, ax_1], [ax2, ax_2])):
         _ax1.set_ylim(0, 70)
         _ax2.set_ylim(0, 70)
-        _ax2.set_yticklabels(["" for i in ax2.get_yticks()])
+        _ax2.set_yticklabels(["" for _ in ax2.get_yticks()])
         _ax2.set_xticks([0.05, 0.10])
         _ax2.set_xlabel("$P(\\tau)")
         _ax2.set_ylabel("")
@@ -162,21 +160,18 @@ for i, (gs, from_stop_I) in enumerate(zip([gs1, gs2], from_stop_Is)):
                   fontsize=15,
                   color="black")
 
-        if i is 0:
-            _ax2_xticks = [0.10, 0.20]
+        if i == 0:
+            _ax2_xticks = [0.10, 0.20, 0.3]
         else:
             _ax2_xticks = [0.05, 0.10, 0.15]
         _ax2.set_xticks(_ax2_xticks)
-        _ax2.set_xticklabels(["0.05", "0.10", "0.15"])
         plt.setp(_ax1.xaxis.get_majorticklabels(), rotation=40, ha="center")
 
-
-fig1_fname += "_fastest_trip_stats.pdf"
-fig1_fname = make_filename_nice(fig1_fname)
-fig2_fname += ".pdf"
-fig2_fname = make_filename_nice(fig2_fname)
-
+# show the figures
 plt.show()
 
+# Save figures
+fig1_fname = make_filename_nice(fig1_fname + "_fastest_trip_stats.pdf")
+fig2_fname = make_filename_nice(fig2_fname + ".pdf")
 fig1.savefig(fig1_fname)
 fig2.savefig(fig2_fname)

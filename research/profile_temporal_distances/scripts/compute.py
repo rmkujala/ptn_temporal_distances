@@ -6,6 +6,7 @@ import pickle
 import networkx
 import numpy
 import pandas
+import csv
 
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
@@ -23,6 +24,9 @@ def target_list_to_str(targets):
 
 
 def get_profile_data(targets=None, recompute=False, **kwargs):
+    """
+    Get node profiles from disk, or alternatively compute them based using _compute_profile_data.
+    """
     if targets is None:
         targets = [115]
     node_profiles_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_" + target_list_to_str(targets) + ".pickle")
@@ -40,6 +44,9 @@ def get_profile_data(targets=None, recompute=False, **kwargs):
 
 
 def get_node_profile_statistics(targets, recompute=False, recompute_profiles=False):
+    """
+    Get node profile statistics from pickle cache, or alternatively compute them based on (possibly) existing profiles.
+    """
     profile_statistics_fname = os.path.join(RESULTS_DIRECTORY, "node_profile_statistics_" +
                                             target_list_to_str(targets) + ".pickle")
     if recompute_profiles:
@@ -56,11 +63,15 @@ def get_node_profile_statistics(targets, recompute=False, recompute_profiles=Fal
     return observable_name_to_data
 
 
-def _read_connections_pandas():
-    import pandas
-    events = pandas.read_csv(HELSINKI_TRANSIT_CONNECTIONS_FNAME)
-    events = events[events["dep_time_ut"] >= ROUTING_START_TIME_DEP]
-    time_filtered_events = events[events["dep_time_ut"] <= ROUTING_END_TIME_DEP]
+def read_connections_pandas(events_fname=HELSINKI_TRANSIT_CONNECTIONS_FNAME,
+                            routing_start_time_dep=ROUTING_START_TIME_DEP,
+                            routing_end_time_dep=ROUTING_END_TIME_DEP):
+    """
+    Read events from a csv file, and create a list of Connection objects.
+    """
+    events = pandas.read_csv(events_fname)
+    events = events[events["dep_time_ut"] >= routing_start_time_dep]
+    time_filtered_events = events[events["dep_time_ut"] <= routing_end_time_dep]
     time_filtered_events.sort_values("dep_time_ut", ascending=False, inplace=True)
 
     connections = [
@@ -70,8 +81,13 @@ def _read_connections_pandas():
     return connections
 
 
-def _read_connections_csv(routing_start_time, routing_end_time):
-    import csv
+def read_connections_csv(events_fname=HELSINKI_TRANSIT_CONNECTIONS_FNAME,
+                         routing_start_time_dep=ROUTING_START_TIME_DEP,
+                         routing_end_time_dep=ROUTING_END_TIME_DEP):
+    """
+    Read events from a csv file, and create a list of Connection objects.
+    Uses the built-in
+    """
     # header: from_stop_I, to_stop_I, dep_time_ut, arr_time_ut, route_type, route_id, trip_I, seq
     from_node_index = 0
     to_node_index = 1
@@ -79,13 +95,13 @@ def _read_connections_csv(routing_start_time, routing_end_time):
     arr_time_index = 3
     trip_I_index = 6
     connections = []
-    with open(HELSINKI_TRANSIT_CONNECTIONS_FNAME, 'r') as csvfile:
+    with open(events_fname, 'r') as csvfile:
         events_reader = csv.reader(csvfile, delimiter=',')
         for _row in events_reader:
             break
         for row in events_reader:
             dep_time = int(row[dep_time_index])
-            if routing_start_time <= dep_time <= routing_end_time:
+            if routing_start_time_dep <= dep_time <= routing_end_time_dep:
                 connections.append(
                     Connection(int(row[from_node_index]), int(row[to_node_index]), int(row[dep_time_index]),
                                int(row[arr_time_index]), int(row[trip_I_index])))
@@ -93,7 +109,7 @@ def _read_connections_csv(routing_start_time, routing_end_time):
     return connections
 
 
-def _read_transfers_pandas(max_walk_distance=500):
+def _read_transfers_pandas(max_walk_distance=1000):
     import pandas
     transfers = pandas.read_csv(HELSINKI_DATA_BASEDIR + "main.day.transfers.csv")
     filtered_transfers = transfers[transfers["d_walk"] <= max_walk_distance]
@@ -103,15 +119,16 @@ def _read_transfers_pandas(max_walk_distance=500):
     return net
 
 
-def _read_transfers_csv(max_walk_distance=500):
-    import csv
+def read_transfers_csv(fname=None, max_walk_distance=1000):
     # "from_stop_I,to_stop_I,d,d_walk"
     from_node_index = 0
     to_node_index = 1
     d_walk_index = 3
     net = networkx.Graph()
-    with open(HELSINKI_DATA_BASEDIR + "main.day.transfers.csv", 'r') as csvfile:
-        transfers_reader = csv.reader(csvfile, delimiter=',')
+    if fname is None:
+        fname = HELSINKI_DATA_BASEDIR + "main.day.transfers.csv"
+    with open(fname, 'r') as csv_file:
+        transfers_reader = csv.reader(csv_file, delimiter=',')
         for _row in transfers_reader:
             break
         for row in transfers_reader:
@@ -121,13 +138,29 @@ def _read_transfers_csv(max_walk_distance=500):
     return net
 
 
-def _get_new_csp(targets=None, params=None, verbose=True):
+def _get_new_csp_with_default_settings(targets=None, params=None, verbose=True):
+    """
+    Get a new MultiObjectivePseudoCSAProfiler with default settings and data for Helsinki.
+
+    Parameters
+    ----------
+    targets
+    params
+    verbose
+
+    Returns
+    -------
+    csp: MultiObjectivePseudoCSAProfiler
+    params: dict
+        The parameters used for csp
+    """
     if "routing_start_time_dep" not in params or params["routing_start_time_dep"] is None:
         params["routing_start_time_dep"] = ROUTING_START_TIME_DEP
     if "routing_end_time_dep" not in params or params["routing_end_time_dep"] is None:
         params['routing_end_time_dep'] = ROUTING_END_TIME_DEP
 
-    connections = _read_connections_csv(
+    connections = read_connections_csv(
+        HELSINKI_TRANSIT_CONNECTIONS_FNAME,
         params["routing_start_time_dep"],
         params["routing_end_time_dep"]
     )
@@ -137,7 +170,7 @@ def _get_new_csp(targets=None, params=None, verbose=True):
     if "max_walk_distance" not in params:
         print("resetting max walk distance to default (1000m)")
         params["max_walk_distance"] = 1000
-    net = _read_transfers_csv(params["max_walk_distance"])
+    net = read_transfers_csv(None, params["max_walk_distance"])
     if "track_time" not in params:
         print("setting time tracking on")
         params["track_time"] = True
@@ -169,7 +202,7 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
                           routing_start_time_dep=None, routing_end_time_dep=None,
                           csp=None, verbose=True, return_profiler=False):
     """
-    Compute profile data
+    Given a target, compute node profiles (i.e. Pareto-optimal Journey alternatives).
 
     Parameters
     ----------
@@ -185,6 +218,7 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
     -------
     profiles: dict
     csp: MultiObjectivePseudoCSAProfiler
+        Returned only if return_profiler equals True
     """
     max_walk_distance = 1000
     walking_speed = 70 / 60.0
@@ -201,7 +235,7 @@ def _compute_profile_data(targets=[115], track_vehicle_legs=True, track_time=Tru
     }
 
     if csp is None:
-        csp, params = _get_new_csp(targets=targets, params=params, verbose=verbose)
+        csp, params = _get_new_csp_with_default_settings(targets=targets, params=params, verbose=verbose)
     else:
         csp.reset(targets)
 
@@ -253,16 +287,31 @@ def __compute_profile_stats_from_profiles(profile_data):
             observable_value = method(profile_analyzer)
             if observable_value is None:
                 print(observable_name, stop_I)
-            _assert_results_are_positive_if_not_infs_or_nans(observable_value)
+            _assert_results_are_positive_or_infs_or_nans(observable_value)
             observable_name_to_data[observable_name].append(observable_value)
     return observable_name_to_data
 
 
-def _assert_results_are_positive_if_not_infs_or_nans(value):
-    is_nan = numpy.isnan(value)
-    is_inf = numpy.isinf(value)
-    is_not_negative = value >= 0
-    assert (is_nan or is_inf or is_not_negative)
+def _assert_results_are_positive_or_infs_or_nans(array):
+    """
+
+    Parameters
+    ----------
+    array:
+
+    Returns
+    -------
+    None
+
+    Raises:
+    ------
+    AssertionError
+        if some of the results results are not positive or infs or nans
+    """
+    is_nan = numpy.isnan(array)
+    is_inf = numpy.isinf(array)
+    is_not_negative = (array >= 0)
+    assert (is_nan or is_inf or is_not_negative).all()
 
 
 def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=False):
@@ -288,31 +337,3 @@ def compute_all_to_all_profile_statistics_with_defaults(target_Is=None, verbose=
         }
         with open(fname, "wb") as f:
             pickle.dump(to_store, f, -1)
-
-
-if __name__ == "__main__":
-    # ROUTING_START_TIME_DEP = 1475528220
-    ROUTING_END_TIME_DEP = ROUTING_START_TIME_DEP + 3600  # 1475530980
-    targets = [115]
-    _profile_data, csp = _compute_profile_data(
-        targets=targets, track_vehicle_legs=True, track_time=True,
-        routing_start_time_dep=ROUTING_START_TIME_DEP,
-        routing_end_time_dep=ROUTING_END_TIME_DEP,
-        csp=None, return_profiler=True
-    )
-
-    profiles = _profile_data['profiles']
-
-    min_tdists = [NodeProfileAnalyzerTimeAndVehLegs(profile,
-                                                    start_time_dep=ANALYSIS_START_TIME_DEP,
-                                                    end_time_dep=ANALYSIS_END_TIME_DEP).min_temporal_distance()
-                  for profile in _profile_data['profiles'].values()]
-
-    uniques = numpy.unique(numpy.ceil(numpy.array(min_tdists) / 60.0))
-
-    # performance testing:
-    # orig_routing_end_time_dep = ROUTING_END_TIME_DEP
-    # for i in range(1, 5):  # , 5):
-    #     ROUTING_END_TIME_DEP = ROUTING_START_TIME_DEP + i * 3600
-    #     print("Total routing time: (hours)", (ROUTING_END_TIME_DEP - ROUTING_START_TIME_DEP) / 3600.)
-    #     _compute_profile_data()

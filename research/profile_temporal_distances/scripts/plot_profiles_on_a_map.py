@@ -1,43 +1,31 @@
+import folium
 import matplotlib
 import matplotlib.cm
 import matplotlib.colors
 import matplotlib.pyplot as plt
 import mplleaflet
 import numpy
-import smopy
-
-from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
-from util import _get_smopy_map
-
-smopy.TILE_SERVER = "http://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-# smopy.TILE_SERVER = "http://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-
-import folium
-
 import pandas
-from jinja2 import Template
 
 from compute import get_node_profile_statistics, target_list_to_str
-
-from jinja2.environment import Environment
+from settings import AALTO_STOP_ID
 from settings import HELSINKI_NODES_FNAME, DARK_TILES
 from settings import RESULTS_DIRECTORY
-from settings import OTANIEMI_STOP_ID
+from util import get_smopy_map
 
-
-
-
-
-
+"""
+Some old code for plotting various profile statistics on map.
+This code has not been used for producing any figures in the paper, but is left here for a reference on plotting
+points on map using folium, smopy and leaflet.
+"""
 
 
 def plot_temporal_distances():
     # old code here to plot plenty of stuff
-    targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
+    targets = [AALTO_STOP_ID]  # [115, 3063]  # kamppi, kilo
     nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
     data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=False)
     observable_name_to_data = data
-
 
     min_temporal_distances = numpy.array(data["min_temporal_distance"])
     mean_temporal_distances = numpy.array(data["mean_temporal_distance"])
@@ -46,12 +34,17 @@ def plot_temporal_distances():
     observable_name_to_data["max_minus_mean_temporal_distance"] = max_temporal_distances - mean_temporal_distances
     observable_name_to_data["mean_minus_min_temporal_distance"] = mean_temporal_distances - min_temporal_distances
     observable_name_to_data["mean_minus_min_temporal_distance"] = mean_temporal_distances - min_temporal_distances
-    observable_name_to_data["mean_minus_mean_min_n_boardings"] = numpy.array(observable_name_to_data["mean_temporal_distance_with_min_n_boardings"]) - mean_temporal_distances
-    observable_name_to_data["min_minus_min_min_n_boardings"] = numpy.array(observable_name_to_data["min_temporal_distance_with_min_n_boardings"]) - min_temporal_distances
-    observable_name_to_data["max_minus_min_per_min"] = (max_temporal_distances - min_temporal_distances) / min_temporal_distances
-    observable_name_to_data["mean_minus_min_per_min"] = (mean_temporal_distances - min_temporal_distances) / min_temporal_distances
-    observable_name_to_data["max_minus_min_per_min_per_mean_minus_min"] = (max_temporal_distances - min_temporal_distances) / (mean_temporal_distances - min_temporal_distances)
-
+    observable_name_to_data["mean_minus_mean_min_n_boardings"] = numpy.array(
+        observable_name_to_data["mean_temporal_distance_with_min_n_boardings"]) - mean_temporal_distances
+    observable_name_to_data["min_minus_min_min_n_boardings"] = numpy.array(
+        observable_name_to_data["min_temporal_distance_with_min_n_boardings"]) - min_temporal_distances
+    observable_name_to_data["max_minus_min_per_min"] = (
+                                                           max_temporal_distances - min_temporal_distances) / min_temporal_distances
+    observable_name_to_data["mean_minus_min_per_min"] = (
+                                                            mean_temporal_distances - min_temporal_distances) / min_temporal_distances
+    observable_name_to_data["max_minus_min_per_min_per_mean_minus_min"] = (
+                                                                              max_temporal_distances - min_temporal_distances) / (
+                                                                              mean_temporal_distances - min_temporal_distances)
 
     print("Producing figures")
     basename = RESULTS_DIRECTORY + "/helsinki_test_" + target_list_to_str(targets) + "_"
@@ -66,16 +59,11 @@ def plot_temporal_distances():
                         "mean_minus_min_temporal_distance",
                         "max_minus_min_temporal_distance",
                         "max_minus_mean_temporal_distance",
-                        "mean_minus_min_per_min", "max_minus_min_per_min",
+                        "mean_minus_min_per_min",
+                        "max_minus_min_per_min",
                         # "max_minus_min_per_min_per_mean_minus_min",
                         ]
-    # observable_names = ["min_temporal_distance",
-    #                     "mean_temporal_distance",
-    #                     "max_temporal_distance",
-    #                     "mean_minus_min_temporal_distance",
-    #                     "max_minus_min_temporal_distance",
-    #                     "max_minus_mean_temporal_distance"
-    #                     ]
+
     smopy_fig = plt.figure(figsize=(15, 10))  # , dpi=300)
     # smopy_fig.tight_layout()
     plt.subplots_adjust(hspace=0.05, top=0.99, bottom=0.01, left=0.01, right=0.99, wspace=0.01)
@@ -137,11 +125,8 @@ def _plot_mplleafflet(lats, lons, observable_values_in_minutes, observable_name,
     assert (isinstance(ax, matplotlib.axes.Axes))
     ax.scatter(lons, lats, c=colors, edgecolors=colors, s=10)
     cbar = fig.colorbar(scalar_mappable)
-
     ax.set_title(observable_name)
     mplleaflet.save_html(fig, basename + observable_name + ".html")
-
-
 
 
 def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scalar_mappable, basename, node_names,
@@ -150,11 +135,11 @@ def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scala
     if ax is None:
         fig = plt.figure()  # figsize=(12, 8), dpi=300)
         ax = fig.add_subplot(111)
-    smopy_map = _get_smopy_map(numpy.percentile(lats, 100 - 98),
-                               numpy.percentile(lats, 100 - 6),
-                               numpy.percentile(lons, 5),
-                               numpy.percentile(lons, 95),
-                               z=10)
+    smopy_map = get_smopy_map(numpy.percentile(lats, 100 - 98),
+                              numpy.percentile(lats, 100 - 6),
+                              numpy.percentile(lons, 5),
+                              numpy.percentile(lons, 95),
+                              z=10)
     ax = smopy_map.show_mpl(figsize=(12, 8), ax=ax, alpha=0.8)
     xs, ys = smopy_map.to_pixels(lats, lons)
     ax.set_xticks([])
@@ -177,7 +162,7 @@ def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scala
         if target_marker_color is None:
             target_marker_color = "red"
         if target_marker_size is None:
-            target_marker_size=10
+            target_marker_size = 10
         if target_marker_width is None:
             target_marker_width = 3
         ax.plot(xs, ys, "x",
@@ -207,16 +192,11 @@ def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable
             fill_opacity=0.6,
             popup=str(node_name)
         )
-        # monkey patching the template to be less verbose (perhaps not idea, though)
-        circle._template = Template(
-            u" {% macro script(this, kwargs) %} var {{this.get_name()}} = L.circle( [{{this.location[0]}},{{this.location[1]}}], {{ this.radius }}, { color: '{{ this.color }}', fillColor: '{{ this.fill_color }}', fillOpacity: {{ this.fill_opacity }} } ).addTo({{this._parent.get_name()}}); {% endmacro %} ")
-        circle._template.environment = Environment(trim_blocks=True, lstrip_blocks=True)
         f.add_child(circle)
 
-    mapa = folium.Map([center_lat, center_lon], zoom_start=12, tiles=DARK_TILES, detect_retina=True)
-    mapa.add_child(f)
-    # mapa.add_child(cm)
-    mapa.save(basename + observable_name + ".html")
+    folium_map = folium.Map([center_lat, center_lon], zoom_start=12, tiles=DARK_TILES, detect_retina=True)
+    folium_map.add_child(f)
+    folium_map.save(basename + observable_name + ".html")
 
 
 if __name__ == "__main__":

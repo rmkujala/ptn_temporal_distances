@@ -1,5 +1,3 @@
-from copy import copy
-
 import settings
 from gtfspy.routing.label import LabelTimeSimple, LabelTimeWithBoardingsCount
 from gtfspy.routing.node_profile_analyzer_time import NodeProfileAnalyzerTime
@@ -10,6 +8,10 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 
+"""
+Code for producing the temporal distance examples provided in the paper.
+"""
+
 from matplotlib import rc
 rc('text', usetex=True)
 
@@ -19,8 +21,8 @@ labels_t_dep_dur_b = [
     (15, 5, 2, "C"),  # C
     (18, 4, 1, "D"),  # D
     (21, 5, 1, "E"),  # E
-    (8, 6, 1, "F"),   # F (not on fastest path
-    (14, 7, 1, "G")  # G (not on fastest path)
+    (8, 6, 1, "F"),   # F (not on the fastest path)
+    (14, 7, 1, "G")  # G (not on the fastest path)
 ]
 labels_t_dep_dur_b = list(reversed(sorted(labels_t_dep_dur_b)))
 
@@ -69,9 +71,6 @@ def plot_plain_profile():
     ax1.set_ylabel("Temporal distance $\\tau$ (min)")
 
     handles, labels = ax1.get_legend_handles_labels()
-    # legend_order = [4, 3, 0, 1, 2]
-    # handles = [handles[order] for order in legend_order]
-    # labels = [labels[order] for order in legend_order]
 
     ax1.legend(handles, labels, loc="best",
                fancybox=True, ncol=2, shadow=False, prop={'size': 9})
@@ -83,8 +82,6 @@ def plot_plain_profile():
                   transform=_ax.transAxes,
                   fontsize=15,
                   color="black")
-    # fig.tight_layout()
-    # plt.subplots_adjust(wspace=0.34)
     fig.savefig(settings.FIGS_DIRECTORY + "schematic_temporal_distance.pdf")
 
 
@@ -118,8 +115,6 @@ def plot_transfer_profile():
     journey_letters = [label[-1] for label in labels_t_dep_dur_b[::-1]]
 
     fig = plt.figure(figsize=(5.5, 3.5))
-    subplot_grid = (1, 6)
-
     ax1 = plt.subplot(gs[:, :4])
     fig = analyzer.plot_new_transfer_temporal_distance_profile(format_string="%S",
                                                                duration_divider=1,

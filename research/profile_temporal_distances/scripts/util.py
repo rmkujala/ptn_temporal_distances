@@ -1,7 +1,5 @@
-# -*- coding: latin-1 -*-
 import pickle
 import multiprocessing
-
 import smopy
 
 
@@ -37,8 +35,9 @@ def run_in_parallel(work_func, arg_list, n_cpus, chunksize=1):
 
 
 def split_into_equal_length_parts(array, n_splits):
+    # Taken from:
     # http://stackoverflow.com/questions/2130016/splitting-a-list-of-arbitrary-size-into-only-roughly-n-equal-parts
-    # pretty nice :)
+    # Pretty nice solution.
     a = array
     n = n_splits
     k, m = divmod(len(a), n)
@@ -47,12 +46,14 @@ def split_into_equal_length_parts(array, n_splits):
     assert(lists[-1][-1] == array[-1])
     return lists
 
+
 def make_filename_nice(fname):
     fname = fname.replace(" ", "_")
     fname = fname.replace("'", "")
     fname = fname.replace("ä", "a")
     fname = fname.replace("ö", "o")
     return fname
+
 
 def make_string_latex_friendly(fname):
     fname = fname.replace("_", "\\_")
@@ -61,8 +62,11 @@ def make_string_latex_friendly(fname):
     fname = fname.replace("ö", '\\"o')
     return fname
 
-def get_data_or_compute(fname, comp_func, *args, **kwargs):
+
+def get_data_or_compute(fname, comp_func, recompute=False, *args, **kwargs):
     """
+    A simple pickle_cache for computing stuff.
+
     Parameters
     ----------
     fname : str
@@ -81,26 +85,26 @@ def get_data_or_compute(fname, comp_func, *args, **kwargs):
     data: object
         the data object returned by comp_fund
     """
-    recompute = kwargs.pop('recompute', False)
-
     try:
         if recompute:
             raise RuntimeError("Recompute!")
         with open(fname, "rb") as f:
-            print("loading data")
+            print("Loading data")
             data = pickle.load(f)
     except (RuntimeError, TypeError, EOFError, IOError) as e:
-        print("Data not found, computing; error message was:" + str(e))
+        print("Tried to load data from disk, but failed. This is expected if the data has not been yet computed)")
+        print("The provided error message was: " + str(e))
         with open(fname, "wb") as f:
             data = comp_func(*args, **kwargs)
             pickle.dump(data, f, -1)
     return data
 
 
-def _get_smopy_map(lat_min, lat_max, lon_min, lon_max, z):
+def get_smopy_map(lat_min, lat_max, lon_min, lon_max, z):
     args = (lat_min, lat_max, lon_min, lon_max, z)
-    if args not in _get_smopy_map.maps:
+    if args not in get_smopy_map.maps:
         smopy.Map.get_allowed_zoom = lambda self, z: z
-        _get_smopy_map.maps[args] = smopy.Map((lat_min, lon_min, lat_max, lon_max), z=z)
-    return _get_smopy_map.maps[args]
-_get_smopy_map.maps = {}
+        get_smopy_map.maps[args] = smopy.Map((lat_min, lon_min, lat_max, lon_max), z=z)
+    return get_smopy_map.maps[args]
+
+get_smopy_map.maps = {}

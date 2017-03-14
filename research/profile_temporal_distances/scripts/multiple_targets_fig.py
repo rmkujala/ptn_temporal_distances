@@ -1,28 +1,30 @@
-import matplotlib
-import numpy
-import requests
 import os
 
+import matplotlib
+import numpy
+import pandas
+import requests
+from matplotlib import cm
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
-from matplotlib import cm
-from matplotlib.colors import Normalize
+from matplotlib import rc
 from matplotlib.axes import Axes
-import pandas
+from matplotlib.colors import Normalize
 
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
-from plot_profiles_on_a_map import _plot_smopy
-from settings import RESULTS_DIRECTORY, FIGS_DIRECTORY
-
 from gtfspy.util import wgs84_distance
-from util import get_data_or_compute, _get_smopy_map
-
+from plot_profiles_on_a_map import _plot_smopy
 from settings import HELSINKI_NODES_FNAME
+from settings import RESULTS_DIRECTORY, FIGS_DIRECTORY
+from util import get_data_or_compute, get_smopy_map
 
-from matplotlib import rc
 rc("text", usetex=True)
 
 recompute_all = True
+
+"""
+Code for computing (and plotting) the results for multiple targets.
+"""
 
 def get_swimming_halls():
     url = "http://www.hel.fi/palvelukarttaws/rest/v2/unit/?service=33462"
@@ -31,21 +33,19 @@ def get_swimming_halls():
     data = r.json()
     return data
 
-
 def plot_smopy(lats, lons, observable_values_in_minutes,
                observable_name, scalar_mappable,
                basename, node_names,
                ax=None):
-
     if ax is None:
         fig = plt.figure()  # figsize=(12, 8), dpi=300)
         ax = fig.add_subplot(111)
 
-    smopy_map = _get_smopy_map(numpy.percentile(lats, 100 - 98),
-                               numpy.percentile(lats, 100 - 6),
-                               numpy.percentile(lons, 5),
-                               numpy.percentile(lons, 95),
-                               z=10)
+    smopy_map = get_smopy_map(numpy.percentile(lats, 100 - 98),
+                              numpy.percentile(lats, 100 - 6),
+                              numpy.percentile(lons, 5),
+                              numpy.percentile(lons, 95),
+                              z=10)
     ax = smopy_map.show_mpl(figsize=(12, 8), ax=ax, alpha=0.8)
     xs, ys = smopy_map.to_pixels(lats, lons)
     ax.set_xticks([])
@@ -61,6 +61,7 @@ def plot_smopy(lats, lons, observable_values_in_minutes,
     ax.scatter(xs[valids], ys[valids], c=colors[valids], edgecolors=colors[valids], s=12)
     ax.set_title(observable_name)
     return ax
+
 
 use_swimming_halls = True
 
@@ -141,7 +142,6 @@ nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
 lats = nodes['lat'].values
 lons = nodes['lon'].values
 
-
 for i, (observable, lims, title, cmap, ax, cax) in enumerate(
         zip(observables_to_plot, colormap_lims, labels, colormaps, axs, caxs)):
     norm = Normalize(vmin=lims[0], vmax=lims[1])
@@ -157,12 +157,11 @@ for i, (observable, lims, title, cmap, ax, cax) in enumerate(
     target_lats = numpy.array([t['latitude'] for t in target_locations])
     target_lons = numpy.array([t['longitude'] for t in target_locations])
     _, smopy_map = _plot_smopy(lats[to_sort], lons[to_sort], values[to_sort],
-                None, sm, None, None, ax=ax, return_smopy_map=True,
+                               None, sm, None, None, ax=ax, return_smopy_map=True,
                                target_lats=target_lats, target_lons=target_lons,
                                target_marker_color="blue",
                                target_marker_width=2.5,
                                target_marker_size=8)
-
 
     if i == 1:
         ticks = list(range(int(max_n_boardings)))
@@ -186,7 +185,7 @@ for ax, cax, letter in zip(axs, caxs, "ABCDE"):
     cx0, cy0, cw1, ch1 = cax.get_position().bounds
 
     print(cx0, ay0, cw1, ah1)
-    cax.set_position([cx0, ay0, (cw1) / 2., ah1])
+    cax.set_position([cx0, ay0, cw1 / 2., ah1])
 
     ax.text(0.04, 0.96, "\\textbf{" + letter + "}",
             horizontalalignment="left",
@@ -197,4 +196,3 @@ for ax, cax, letter in zip(axs, caxs, "ABCDE"):
 
 fig.savefig(os.path.join(FIGS_DIRECTORY, "multiple_targets_" + fname_postfix + ".pdf"))
 plt.show()
-

@@ -1,46 +1,41 @@
-import numpy
-from matplotlib import pyplot as plt
-import pandas
-import matplotlib
-import matplotlib.cm
-import matplotlib.colors
-from matplotlib.axes import Axes
-from matplotlib import gridspec
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
-from plot_profiles_on_a_map import _plot_smopy
-from compute import get_node_profile_statistics
-from settings import OTANIEMI_STOP_ID, HELSINKI_NODES_FNAME, FIGS_DIRECTORY
-
-from matplotlib import rc
 import os
 
+import matplotlib.colors
+import numpy
+import pandas
+from matplotlib import gridspec
+from matplotlib import pyplot as plt
+from matplotlib import rc
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from compute import get_node_profile_statistics
+from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
+from plot_profiles_on_a_map import _plot_smopy
+from settings import AALTO_STOP_ID, HELSINKI_NODES_FNAME, FIGS_DIRECTORY
 
 rc("text", usetex=True)
 
-caxs = []
+"""
+Code for computing and plotting transfers, and their differences, on map.
+"""
 
-targets = [OTANIEMI_STOP_ID]  # [115, 3063]  # kamppi, kilo
-nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
-targets_info = nodes[nodes.stop_I.isin(targets)]
+colorbar_axes = []
+
+targets = [AALTO_STOP_ID]  # [115, 3063]  # kamppi, kilo
+nodes_info = pandas.read_csv(HELSINKI_NODES_FNAME)
+targets_info = nodes_info[nodes_info.stop_I.isin(targets)]
 target_lats = targets_info['lat']
 target_lons = targets_info['lon']
 
-data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=True)
+data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=False)
 observable_name_to_data = data
 
 min_n_boardings = numpy.array(data["min_n_boardings"])
 mean_n_boardings = numpy.array(data["mean_n_boardings_on_shortest_paths"])
-max_n_boardings = numpy.array(data["max_n_boardings_on_shortest_paths"])
-journey_counts = numpy.array(data["n_pareto_optimal_trips"])
 mean_temporal_distance_with_min_n_boardings = numpy.array(data["mean_temporal_distance_with_min_n_boardings"])
 mean_temporal_distances = numpy.array(data["mean_temporal_distance"])
-
-assert (len(journey_counts) == len(nodes))
-
 observable_name_to_data["mean_minus_min_transfers"] = mean_n_boardings - min_n_boardings
+assert (len(mean_n_boardings) == len(nodes_info))
 
 smopy_fig = plt.figure(figsize=(11, 6))
 plt.subplots_adjust(hspace=0.1, top=0.95, bottom=0.01, left=0.03, right=0.97)
@@ -69,46 +64,48 @@ titles = [
     "Max. boardings on f. p., $b_\\mathrm{max\\,f.p.}$"
 ]
 
+
+# BASIC BOARDING COUNTS PLOTS
+#############################
 observable_names_to_plot = ["min_n_boardings",
                             "mean_n_boardings_on_shortest_paths",
                             "max_n_boardings_on_shortest_paths"]
-
 for i, (observable_name, title) in enumerate(zip(observable_names_to_plot, titles)):
     print(observable_name)
-    observable_values = observable_name_to_data[observable_name]
-    # set up colors
-
-    observable_values = numpy.array(observable_values)
+    observable_values = numpy.array(observable_name_to_data[observable_name])
 
     nans = numpy.isnan(observable_values)
     observable_values[nans] = float('inf')
     observable_values_to_plot = observable_values
 
-    lats = nodes['lat']
-    lons = nodes['lon']
+    lats = nodes_info['lat']
+    lons = nodes_info['lon']
+    # Sort for a suitable order of plotting:
     zipped = list(zip(observable_values_to_plot, lats, lons,
-                      [str(node) for node in nodes['desc']]))
+                      [str(node) for node in nodes_info['desc']]))
     zipped = sorted(zipped)
     if "minus" not in observable_name:
         zipped = reversed(zipped)
     observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
+
     observable_values_to_plot = numpy.array(observable_values_to_plot)
     lats = numpy.array(lats)
     lons = numpy.array(lons)
-
     _plot_smopy(lats, lons, observable_values_to_plot,
                 title, sm, None, node_desc,
                 ax=_i_to_ax[i], target_lats=target_lats, target_lons=target_lons, target_marker_color="blue")
 
-# cax = _get_subplot(4)
+
+# Add a shared colorbar for the boarding-count maps
 cax = _i_to_ax[5]
-caxs.append(cax)
+colorbar_axes.append(cax)
 cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical", label="Number of boardings")
 cbar.set_ticks(range(0, max_n_boardings + 1))
 
-# DIFFERENCES IN BOARDING COUNTS (mean-min)
-##################################################
-cmap = matplotlib.cm.get_cmap(name="viridis", lut=None)  # prism, viridis_r
+
+# DIFFERENCES IN BOARDING COUNTS: mean_minus_min_transfers
+##########################################################
+cmap = matplotlib.cm.get_cmap(name="viridis", lut=None)
 norm = matplotlib.colors.Normalize(vmin=0, vmax=2)  # 3.5)
 sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
 sm.set_array([norm.vmin, norm.vmax])
@@ -117,13 +114,13 @@ print(max(mean_minus_min[mean_minus_min < float('inf')]))
 
 nans = numpy.isnan(mean_minus_min)
 mean_minus_min[nans] = float('inf')
-lats = list(nodes['lat'])
-lons = list(nodes['lon'])
+lats = list(nodes_info['lat'])
+lons = list(nodes_info['lon'])
 assert (len(mean_minus_min) == len(lats))
 zipped = list(zip(mean_minus_min,
                   list(lats),
                   list(lons),
-                  [str(node) for node in nodes['desc']]))
+                  [str(node) for node in nodes_info['desc']]))
 zipped = list((sorted(zipped)))
 observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
 observable_values_to_plot = numpy.array(observable_values_to_plot)
@@ -136,82 +133,49 @@ ax = _i_to_ax[3]
 ax.set_title("Difference, $b_\\mathrm{mean\\,f.p.}-b_\\mathrm{min}$")
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="10%", pad=0.1)
-caxs.append(cax)
+colorbar_axes.append(cax)
 cbar = smopy_fig.colorbar(sm, cax=cax, orientation="vertical")
 
-# NUMBER OF JOURNEYS OR ( mean_temporal_distance_with_min_n_boardings - mean_temporal_distance)
-##################################################
 
-journeys_instead_of_time_diff = False
-if journeys_instead_of_time_diff:
-    cmap = matplotlib.cm.get_cmap(name="viridis", lut=None)  # prism, viridis_r
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=30)
-    sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-    sm.set_array([norm.vmin, norm.vmax])
-    n_journeys = numpy.array(observable_name_to_data["n_pareto_optimal_trips"])
-    print("Max n journeys", n_journeys.max())
+# TRADE-OFFS IN TEMPORAL DISTANCE
+# mean_temporal_distance_with_min_n_boardings - mean_temporal_distance
+######################################################################
 
-    lats = list(nodes['lat'])
-    lons = list(nodes['lon'])
-    assert (len(mean_minus_min) == len(lats))
-    zipped = list(zip(n_journeys,
-                      list(lats),
-                      list(lons),
-                      [str(node) for node in nodes['desc']]))
-    zipped = list((sorted(zipped)))
-    observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
-    observable_values_to_plot = numpy.array(observable_values_to_plot)
-    lats = numpy.array(lats)
-    lons = numpy.array(lons)
-    ax = _plot_smopy(lats, lons, observable_values_to_plot, "", sm, None, node_desc, ax=_i_to_ax[4], s=6,
-                     target_lats=target_lats, target_lons=target_lons)
+cmap = matplotlib.cm.get_cmap(name="viridis", lut=None)  # prism, viridis_r
+max = 20
+norm = matplotlib.colors.Normalize(vmin=0, vmax=max)
+sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+sm.set_array([norm.vmin, norm.vmax])
+difference = (mean_temporal_distance_with_min_n_boardings - mean_temporal_distances)
+difference /= 60.0
 
-    ax = _i_to_ax[4]
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="10%", pad=0.1)
-    caxs.append(cax)
-    ax.set_title("Number of alternative journeys, $n_\\mathrm{journeys}$")
-    cbar = smopy_fig.colorbar(sm,
-                              cax=cax,
-                              orientation="vertical")
-else:
-    #### mean_temporal_distance_with_min_n_boardings - mean_temporal_distance
-    ##########################################################################
-    cmap = matplotlib.cm.get_cmap(name="viridis", lut=None)  # prism, viridis_r
-    max = 20
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=max)
-    sm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-    sm.set_array([norm.vmin, norm.vmax])
-    difference = (mean_temporal_distance_with_min_n_boardings - mean_temporal_distances)
-    # / (mean_n_boardings - min_n_boardings)
-    difference /= 60.0
+difference[difference > max] = max
 
-    difference[difference > max] = max
+lats = list(nodes_info['lat'])
+lons = list(nodes_info['lon'])
+assert (len(difference) == len(lats))  # Just double-checking the data.
+zipped = list(zip(difference,
+                  list(lats),
+                  list(lons),
+                  [str(node) for node in nodes_info['desc']]))
+zipped = list((sorted(zipped)))
+observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
+observable_values_to_plot = numpy.array(observable_values_to_plot)
+lats = numpy.array(lats)
+lons = numpy.array(lons)
+ax = _plot_smopy(lats, lons, observable_values_to_plot, "", sm, None, node_desc, ax=_i_to_ax[4], s=6,
+                 target_lats=target_lats, target_lons=target_lons)
 
-    lats = list(nodes['lat'])
-    lons = list(nodes['lon'])
-    assert (len(difference) == len(lats))
-    zipped = list(zip(difference,
-                      list(lats),
-                      list(lons),
-                      [str(node) for node in nodes['desc']]))
-    zipped = list((sorted(zipped)))
-    observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
-    observable_values_to_plot = numpy.array(observable_values_to_plot)
-    lats = numpy.array(lats)
-    lons = numpy.array(lons)
-    ax = _plot_smopy(lats, lons, observable_values_to_plot, "", sm, None, node_desc, ax=_i_to_ax[4], s=6,
-                     target_lats=target_lats, target_lons=target_lons
-                     )
+ax = _i_to_ax[4]
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="10%", pad=0.1)
+colorbar_axes.append(cax)
+ax.set_title("Difference, $\\tau_\\mathrm{mean} - \\tau_\\mathrm{mean,min. b}$")
+cbar = smopy_fig.colorbar(sm, cax=cax,
+                          orientation="vertical", label="minutes")
 
-    ax = _i_to_ax[4]
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="10%", pad=0.1)
-    caxs.append(cax)
-    ax.set_title("Difference, $\\tau_\\mathrm{mean} - \\tau_\\mathrm{mean,min. b}$")
-    cbar = smopy_fig.colorbar(sm, cax=cax,
-                              orientation="vertical", label="minutes")
 
+# Annotate all axes with a letter
 for i, letter in zip(range(5), "ABCDE"):
     ax = _i_to_ax[i]
     ax.text(0.04, 0.96, "\\textbf{" + letter + "}",
@@ -221,7 +185,8 @@ for i, letter in zip(range(5), "ABCDE"):
             fontsize=15,
             color="white")
 
-for cax in caxs:
+# Adjust colorbars
+for cax in colorbar_axes:
     yticklabels = cax.get_yticklabels()
     last_label = yticklabels[-1]
     last_label.set_text(u"$\\geq$ " + last_label.get_text())

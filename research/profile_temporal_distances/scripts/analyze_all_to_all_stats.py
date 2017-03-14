@@ -17,8 +17,13 @@ to_vectors = NodeProfileAnalyzerTimeAndVehLegs.all_measures_and_names_as_lists()
 ALL_TO_ALL_STATS_DIR = os.path.join(settings.RESULTS_DIRECTORY, "all_to_all_stats")
 
 from matplotlib import rc
-
 rc('text', usetex=True)
+
+"""
+Code for plotting the all-to-all statistics.
+See the main block (at the end) for an entry point to this script.
+"""
+
 
 def _get_raw_stats_filenames():
     filenames = [os.path.join(ALL_TO_ALL_STATS_DIR, fname)
@@ -61,19 +66,17 @@ def _plot_2d_pdf(xvalues, yvalues, xbins, ybins, aspect='equal', ax=None):
     cbar.ax.yaxis.set_offset_position('left')
     cbar.update_ticks()
 
-    # cbar.ticklabel_format(style='sci', scilimits=(-3,4), axis='y')
-
     bin_centers, _, _ = binned_statistic(xvalues, xvalues, statistic='mean', bins=xbins)
     bin_averages, _, _ = binned_statistic(xvalues, yvalues, statistic='mean', bins=xbins)
     percentile_5, _, _ = binned_statistic(xvalues, yvalues, statistic=lambda values: numpy.percentile(values, 5),
                                           bins=xbins)
     percentile_95, _, _ = binned_statistic(xvalues, yvalues, statistic=lambda values: numpy.percentile(values, 95),
                                            bins=xbins)
-    # bin_medians, _, _ = binned_statistic(xvalues, yvalues, statistic='median', bins=xbins)
     bin_stdevs, _, _ = binned_statistic(xvalues, yvalues, statistic='std', bins=xbins)
     ax.plot(bin_centers, bin_averages, ls="-", lw=3.0, color="#FF3EB6", alpha=0.8, label="mean")
     ax.plot(bin_centers, percentile_5, ls="--", lw=3.0, color="#FF3EB6", alpha=0.8, label="5th and 95th percentile")
     ax.plot(bin_centers, percentile_95, ls="--", lw=3.0, color="#FF3EB6", alpha=0.8)  # , label="95th percentile")
+    # bin_medians, _, _ = binned_statistic(xvalues, yvalues, statistic='median', bins=xbins)
     # ax.plot(bin_centers, bin_medians, ls="--", color="green", label="median")
     ax.set_xlim(0, 180)
     ax.set_ylim(0, 180)
@@ -104,12 +107,9 @@ def _load_data():
             recompute=False,
             limit=None
         )
-        # print(matrix.shape)
-        # print(rands.shape)
+        # Uncomment below for faster testing of this plotting script.
         # print("Taking only a small sample for faster plot development!")
         # matrix = matrix[rands]
-
-        print(matrix.shape)
         observable_to_matrix[observable] = matrix
 
     print("data loaded")
@@ -145,10 +145,6 @@ def _load_data():
 
     print("Filtered invalid time values")
 
-    # mins_flattened[combined_time_valids] = 240
-    # maxs_flattened[combined_time_valids] = 240
-    # means_flattened[combined_time_valids] = 240
-
     mins_flattened_time_valids = mins_flattened[combined_time_valids]
     maxs_flattened_time_valids = maxs_flattened[combined_time_valids]
     means_flattened_time_valids = means_flattened[combined_time_valids]
@@ -168,64 +164,6 @@ def _load_data():
     return time_bins, flattened_time_valids
 
 
-def mean_vs_mean():
-    # mean vs. mean
-    # this turned to not be really interesting
-    # plot symmetricity of observations
-    i_to_j = []
-    j_to_i = []
-    means_mat = observable_to_matrix["mean_temporal_distance"]
-    for i in range(len(means_mat)):
-        for j in range(i + 1, len(means_mat)):
-            ij = means_mat[i, j]
-            ji = means_mat[j, i]
-            if ij < float('inf') and ji < float('inf') and ij >= 0 and ji >= 0:
-                i_to_j.append(means_mat[i, j])
-                j_to_i.append(means_mat[j, i])
-    fig, ax = _plot_2d_pdf(i_to_j,
-                           j_to_i,
-                           time_bins,
-                           time_bins)
-    ax.set_ylabel("mean tdist (i->j)")
-    ax.set_xlabel("mean tdist (j->i)")
-    leg = ax.legend(loc="best", fancybox=True)
-    leg.get_frame().set_alpha(0.8)
-
-    ax.set_xlim([0, 120])
-    ax.set_ylim([0, 120])
-    ax.yaxis.label.set_size(18)
-    ax.xaxis.label.set_size(18)
-    fig.savefig(os.path.join(settings.FIGS_DIRECTORY, "all_to_all_mean_vs_mean_symmetricity.pdf"))
-
-
-def mean_vs_min(xvalues, y_values, x_bins, y_bins):
-    fig, ax = _plot_2d_pdf(mins_flattened_time_valids, maxs_flattened_time_valids,
-                           time_bins, time_bins)
-    ax.set_xlabel("min tdist")
-    ax.set_ylabel("maxs tdist")
-    ax.plot([0, 180], [0, 180], "--", color="blue", lw=3)
-    fig.savefig(os.path.join(settings.FIGS_DIRECTORY, "all_to_all_min_vs_max.pdf"))
-
-
-def max_vs_min():
-    fig, ax = _plot_2d_pdf(mins_flattened_time_valids, means_flattened_time_valids,
-                           time_bins, time_bins)
-    ax.set_xlabel("mins tdist")
-    ax.set_ylabel("means tdist")
-    ax.plot([0, 180], [0, 180], "--", color="blue", lw=3)
-    fig.savefig(os.path.join(settings.FIGS_DIRECTORY, "all_to_all_min_vs_mean.pdf"))
-
-
-def mean_vs_max():
-    fig, ax = _plot_2d_pdf(means_flattened_time_valids,
-                           maxs_flattened_time_valids,
-                           time_bins, time_bins)
-    ax.set_xlabel("means tdist")
-    ax.set_ylabel("maxs tdist")
-    ax.plot([0, 180], [0, 180], "--", color="blue", lw=3)
-    fig.savefig(os.path.join(settings.FIGS_DIRECTORY, "all_to_all_mean_vs_max.pdf"))
-
-
 def plot_mean_minus_min_vs_min(ax, mins, means, time_bins):
     _plot_2d_pdf(mins,
                  means - mins,
@@ -235,17 +173,6 @@ def plot_mean_minus_min_vs_min(ax, mins, means, time_bins):
                  ax=ax)
     ax.set_ylabel("$\\tau_\\mathrm{mean} - \\tau_\\mathrm{min}$")
     ax.set_xlabel("$\\tau_\\mathrm{min}$")
-
-
-def max_minus_min_vs_min():
-    fig, ax = _plot_2d_pdf(mins_flattened_time_valids,
-                           maxs_flattened_time_valids - mins_flattened_time_valids,
-                           time_bins, time_bins)
-    ax.set_ylabel("max - min tdist")
-    ax.set_xlabel("mins tdist")
-    ax.set_xlim([0, 120])
-    ax.set_ylim([0, 60])
-    fig.savefig(os.path.join(settings.FIGS_DIRECTORY, "all_to_all_max_minus_min_vs_min.pdf"))
 
 
 def plot_mean_minus_min_per_min_vs_min(ax, mins, means, time_bins):
@@ -295,7 +222,7 @@ def plot_min_tdist_pdf(ax, min_times, mean_times, max_times, time_bins):
     ax.set_ylabel("Probability density $P(\\tau)$")
     ax.set_xlim([0, 180])
     orig_colors = [[237, 248, 177], [127, 205, 187], [44, 127, 184]][::-1]
-    alphas = [1.0, 0.8, 0.6] # [1.0, 0.7, 0.4]
+    alphas = [1.0, 0.8, 0.6]  # [1.0, 0.7, 0.4]
     colors = [(r / 256., g / 256., b / 256, alpha) for (r, g, b), alpha in zip(orig_colors, alphas)]
     # colors = ['#edf8b1', '#7fcdbb', '#2c7fb8'][::-1]
     labels = ["$\\tau_\\mathrm{%s}$" % s for s in ["min", "mean", "max"]]
@@ -318,7 +245,8 @@ def plot_min_tdist_pdf(ax, min_times, mean_times, max_times, time_bins):
 def plot_min_n_boardings_vs_mean_n_boardings(ax, min_nboardings, mean_n_boardings_fp):
     ax = _plot_2d_pdf(min_nboardings,
                       mean_n_boardings_fp - min_nboardings,
-                      numpy.linspace(-0.5, 0.5 + numpy.round(max(mean_n_boardings_fp)), numpy.round(max(mean_n_boardings_fp)) + 2),
+                      numpy.linspace(-0.5, 0.5 + numpy.round(max(mean_n_boardings_fp)),
+                                     numpy.round(max(mean_n_boardings_fp)) + 2),
                       numpy.linspace(0, max(mean_n_boardings_fp), 50),
                       aspect='auto',
                       ax=ax)
@@ -339,7 +267,6 @@ def plot_boarding_count_distributions(ax1, min_nboardings, mean_n_nboardings_fp,
     fig.add_axes(ax3)
     labels = ["$b_\\mathrm{%s}$" % s for s in ["min", "mean,f.p.", "max,f.p"]]
 
-
     orig_colors = [[237, 248, 177], [127, 205, 187], [44, 127, 184]][::-1]
     alphas = [1.0, 0.7, 1.0]
     colors = [(r / 256., g / 256., b / 256, alpha) for (r, g, b), alpha in zip(orig_colors, alphas)]
@@ -354,23 +281,23 @@ def plot_boarding_count_distributions(ax1, min_nboardings, mean_n_nboardings_fp,
         bins = numpy.linspace(-0.1, max_n + 0.1, max_n * 5 + 2)
         if i == 1:
             ax.hist(values,
-                bins=bins,
-                facecolor=color,
-                edgecolor="k",
-                histtype="stepfilled",
-                normed=True,
-                label=label,
-                lw=lw
-            )
+                    bins=bins,
+                    facecolor=color,
+                    edgecolor="k",
+                    histtype="stepfilled",
+                    normed=True,
+                    label=label,
+                    lw=lw
+                    )
         else:
             hist, bin_edges = numpy.histogram(values, bins)
             print(bin_edges)
             hist = hist / numpy.sum(hist)
-            ax.bar(bin_edges[:-1], hist, width=bin_edges[1]-bin_edges[0], edgecolor="k", label=label, lw=lw, facecolor=color)
+            ax.bar(bin_edges[:-1], hist, width=bin_edges[1] - bin_edges[0], edgecolor="k", label=label, lw=lw,
+                   facecolor=color)
 
-        leg = ax.legend(loc="best", fancybox=True, prop={'size':10})
+        leg = ax.legend(loc="best", fancybox=True, prop={'size': 10})
         leg.get_frame().set_alpha(0.9)
-
 
     ax3.set_xlabel("Number of boardings $b$")
     for ax in [ax1, ax2, ax3]:
@@ -386,50 +313,10 @@ def plot_boarding_count_distributions(ax1, min_nboardings, mean_n_nboardings_fp,
                 tl.set_visible(False)
 
 
-def plot_boarding_count_distributions_old(ax, min_nboardings, mean_n_boardings_fp, max_n_boardings_fp):
-    ax.set_xlabel("Number of boardings $b$")
-    ax.set_ylabel("Probability density $P(b)$")
-    orig_colors = [[237, 248, 177], [127, 205, 187], [44, 127, 184]][::-1]
-    alphas = [1.0, 0.7, 1.0]
-    colors = [(r / 256., g / 256., b / 256, alpha) for (r, g, b), alpha in zip(orig_colors, alphas)]
-    # colors = ['#edf8b1', '#7fcdbb', '#2c7fb8'][::-1]
-    labels = ["$b_\\mathrm{%s}$" % s for s in ["min", "mean,f.p.", "max,f.p"]]
-    max_n = max(max_n_boardings_fp)
-
-    for i, (values, color, label, lw) in enumerate(zip([min_nboardings, mean_n_boardings_fp, max_n_boardings_fp], colors, labels, [2, 1.5, 1.])):
-        bin_width = 0.2
-        offset = -0.07 * (i - 1)
-        bins = numpy.arange(-0.1 + offset, max_n + 0.1 + offset, bin_width)
-        if i is 0:
-            zorder = -10
-        if i is 1:
-            zorder = 10
-        if i is 2:
-            zorder = 0
-        ax.hist(values,
-                bins=bins,
-                facecolor=color,
-                edgecolor="k",
-                histtype="stepfilled",
-                normed=True,
-                label=label,
-                lw=lw,
-                zorder=zorder
-                )
-    xfmt = ScalarFormatter()
-    xfmt.set_powerlimits((-0, 0))
-    ax.yaxis.set_major_formatter(xfmt)
-    leg = ax.legend(loc="best", fancybox=True)
-    leg.get_frame().set_alpha(0.9)
-    ax.set_xlim(-0.15, max_n + 0.15)
-
-
-
-
 if __name__ == "__main__":
     time_bins, flattened_time_valid_dict = _load_data()
     fig = plt.figure(figsize=(11, 5))
-    plt.subplots_adjust(wspace=0.26, hspace=0.30, left=0.05, bottom=0.10, top=0.9, right=0.98, )
+    plt.subplots_adjust(wspace=0.26, hspace=0.34, left=0.05, bottom=0.10, top=0.9, right=0.98, )
 
     ax1 = fig.add_subplot(2, 3, 1)
     plot_min_tdist_pdf(ax1,
@@ -482,6 +369,7 @@ if __name__ == "__main__":
     ax6.set_xlim(0, 120)
     print("finished ax6")
 
+    # Annotating each axes by a letter.
     for ax, letter in zip([ax1, ax2, ax3, ax4, ax5, ax6], "ABCDEF"):
         if ax is ax4:
             y = 0.85
@@ -495,6 +383,5 @@ if __name__ == "__main__":
                 color="black",
                 backgroundcolor="white")
 
-    # fig.tight_layout()
     fig.savefig(settings.FIGS_DIRECTORY + "all_to_all_stats.pdf")
     plt.show()
