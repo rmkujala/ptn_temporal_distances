@@ -33,7 +33,7 @@ MUNKKIVUORI_STOP_ID = 1161
 
 TIMEZONE = pytz.timezone("Europe/Helsinki")
 
-from jinja2 import defaults
-defaults.LSTRIP_BLOCKS = True
-defaults.KEEP_TRAILING_NEWLINE = False
-defaults.TRIM_BLOCKS = True
+# from jinja2 import defaults
+# defaults.LSTRIP_BLOCKS = True
+# defaults.KEEP_TRAILING_NEWLINE = False
+# defaults.TRIM_BLOCKS = True

@@ -1,7 +1,6 @@
 ## General
 This repository contains the scripts (written in Python 3) used for producing the results for the manuscript:
-"Travel times and transfers in public transport networks:
-comprehensive accessibility analysis based on Pareto-optimal journeys"
+"Travel times and transfers in public transport networks: comprehensive accessibility analysis based on Pareto-optimal journeys"
 
 ### License
 All scripts (under `scripts/`) are free to use in accordance with the MIT license.
@@ -12,7 +11,7 @@ If you use these scripts, please cite our paper or give appropriate acknowledgem
 
 ## Data
 The data for running the analyses are provided under `data/`
-The original source data (events and stops) for our analyses consitst of GTFS-data and OpenStreetMap extracts:
+The original source data (events and stops) for our analyses consists of GTFS-data and OpenStreetMap extracts:
 - The original GTFS data has been downloaded from the Reittiopas API (http://developer.reittiopas.fi/pages/en/other-apis.php)
 - The OpenStreetMap data was downloaded from http://www.geofabrik.de/data/download.html (Open Database License 1.0.)
     (used for computing walking distances)
@@ -71,11 +70,13 @@ Other (more standard) dependencies include:
 - `plot_profiles_on_a_map.py`
     - Old legacy code that was no longer used.
 
-### Schematic plots
+### Other plots
 - `schematic_plots.py`
     - Plot schematic examples of temporal distance profiles.
 - `schematic_temporal_network_image.py`
     - Plot a crude node-time diagram of a list of events.
+- `plot_route_map.py`
+    - Plot a route map showing the PT organization.
 
 ## Author / Point of contact:
 Rainer Kujala (Rainer.Kujala@gmail.com; @rmkujala)
