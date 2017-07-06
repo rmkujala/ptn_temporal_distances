@@ -3,7 +3,7 @@ This repository contains the scripts (written in Python 3) used for producing th
 "Travel times and transfers in public transport networks: comprehensive accessibility analysis based on Pareto-optimal journeys"
 
 ### License
-All scripts (under `scripts/`) are free to use in accordance with the MIT license.
+All scripts (under `scripts/`) are licensed under MIT. (See scripts/LICENSE).
 
 ### Acknowledgment
 If you use these scripts, please cite our paper or give appropriate acknowledgement otherwise.
