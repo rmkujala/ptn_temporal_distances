@@ -2,7 +2,6 @@ import pickle
 import multiprocessing
 import smopy
 
-
 def run_in_parallel(work_func, arg_list, n_cpus, chunksize=1):
     """
     Run ``work_func(args)`` with n_cpus number of processors in parallel
@@ -22,6 +21,7 @@ def run_in_parallel(work_func, arg_list, n_cpus, chunksize=1):
     """
     if n_cpus == "max":
         n_cpus = multiprocessing.cpu_count()
+
     # mainly for debugging purposes and generality
     if n_cpus == 1:
         result_list = []
@@ -50,20 +50,20 @@ def split_into_equal_length_parts(array, n_splits):
 def make_filename_nice(fname):
     fname = fname.replace(" ", "_")
     fname = fname.replace("'", "")
-    fname = fname.replace("ä", "a")
-    fname = fname.replace("ö", "o")
+    fname = fname.replace("ï¿½", "a")
+    fname = fname.replace("ï¿½", "o")
     return fname
 
 
 def make_string_latex_friendly(fname):
     fname = fname.replace("_", "\\_")
     fname = fname.replace("'", "\'")
-    fname = fname.replace("ä", '\\\"a')
-    fname = fname.replace("ö", '\\"o')
+    fname = fname.replace("ï¿½", '\\\"a')
+    fname = fname.replace("ï¿½", '\\"o')
     return fname
 
 
-def get_data_or_compute(fname, comp_func, recompute=False, *args, **kwargs):
+def get_data_or_compute(fname, comp_func, *args, recompute=False, **kwargs):
     """
     A simple pickle_cache for computing stuff.
 
@@ -85,6 +85,7 @@ def get_data_or_compute(fname, comp_func, recompute=False, *args, **kwargs):
     data: object
         the data object returned by comp_fund
     """
+    print(recompute)
     try:
         if recompute:
             raise RuntimeError("Recompute!")

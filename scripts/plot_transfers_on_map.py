@@ -7,11 +7,11 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from matplotlib import rc
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 
 from compute import get_node_profile_statistics
-from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from plot_profiles_on_a_map import _plot_smopy
-from settings import AALTO_STOP_ID, HELSINKI_NODES_FNAME, FIGS_DIRECTORY
+from settings import HELSINKI_NODES_FNAME, FIGS_DIRECTORY
 
 rc("text", usetex=True)
 
@@ -21,8 +21,10 @@ Code for computing and plotting transfers, and their differences, on map.
 
 colorbar_axes = []
 
-targets = [AALTO_STOP_ID]  # [115, 3063]  # kamppi, kilo
-nodes_info = pandas.read_csv(HELSINKI_NODES_FNAME)
+import settings
+targets = [settings.get_stop_I_by_stop_id(settings.AALTO_UNIVERSITY_ID)]  # [115, 3063]  # kamppi, kilo
+print(HELSINKI_NODES_FNAME)
+nodes_info = pandas.read_csv(HELSINKI_NODES_FNAME, sep=";")
 targets_info = nodes_info[nodes_info.stop_I.isin(targets)]
 target_lats = targets_info['lat']
 target_lons = targets_info['lon']
@@ -75,7 +77,7 @@ for i, (observable_name, title) in enumerate(zip(observable_names_to_plot, title
     observable_values = numpy.array(observable_name_to_data[observable_name])
 
     nans = numpy.isnan(observable_values)
-    observable_values[nans] = float('inf')
+    observable_values[nans] = 5
     observable_values_to_plot = observable_values
 
     lats = nodes_info['lat']
@@ -89,12 +91,18 @@ for i, (observable_name, title) in enumerate(zip(observable_names_to_plot, title
     observable_values_to_plot, lats, lons, node_desc = zip(*zipped)
 
     observable_values_to_plot = numpy.array(observable_values_to_plot)
+    for value in observable_values_to_plot:
+        if not (value >= 0 and value < float('inf')):
+            print(value, observable_name)
     lats = numpy.array(lats)
     lons = numpy.array(lons)
     _plot_smopy(lats, lons, observable_values_to_plot,
-                title, sm, None, node_desc,
-                ax=_i_to_ax[i], target_lats=target_lats, target_lons=target_lons, target_marker_color="blue")
-
+                title, sm, None,
+                node_desc,
+                ax=_i_to_ax[i],
+                target_lats=target_lats,
+                target_lons=target_lons,
+                target_marker_color="blue")
 
 # Add a shared colorbar for the boarding-count maps
 cax = _i_to_ax[5]
@@ -113,7 +121,7 @@ mean_minus_min = numpy.array(observable_name_to_data["mean_minus_min_transfers"]
 print(max(mean_minus_min[mean_minus_min < float('inf')]))
 
 nans = numpy.isnan(mean_minus_min)
-mean_minus_min[nans] = float('inf')
+# mean_minus_min[nans] = float('inf')
 lats = list(nodes_info['lat'])
 lons = list(nodes_info['lon'])
 assert (len(mean_minus_min) == len(lats))
@@ -170,7 +178,7 @@ ax = _i_to_ax[4]
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="10%", pad=0.1)
 colorbar_axes.append(cax)
-ax.set_title("Difference, $\\tau_\\mathrm{mean} - \\tau_\\mathrm{mean,min. b}$")
+ax.set_title("Difference, $\\tau_\\mathrm{mean,min. b} - \\tau_\\mathrm{mean} $")
 cbar = smopy_fig.colorbar(sm, cax=cax,
                           orientation="vertical", label="minutes")
 
@@ -193,5 +201,5 @@ for cax in colorbar_axes:
     yticklabels[-1] = last_label
     cax.set_yticklabels(yticklabels)
 
-plt.show()
 smopy_fig.savefig(os.path.join(FIGS_DIRECTORY, "transfers_on_map.pdf"))
+plt.show()

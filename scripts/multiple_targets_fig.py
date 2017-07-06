@@ -3,7 +3,6 @@ import os
 import matplotlib
 import numpy
 import pandas
-import requests
 from matplotlib import cm
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
@@ -14,6 +13,7 @@ from matplotlib.colors import Normalize
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from gtfspy.util import wgs84_distance
 from plot_profiles_on_a_map import _plot_smopy
+from prepare import get_swimming_hall_data
 from settings import HELSINKI_NODES_FNAME
 from settings import RESULTS_DIRECTORY, FIGS_DIRECTORY
 from util import get_data_or_compute, get_smopy_map
@@ -26,12 +26,6 @@ recompute_all = True
 Code for computing (and plotting) the results for multiple targets.
 """
 
-def get_swimming_halls():
-    url = "http://www.hel.fi/palvelukarttaws/rest/v2/unit/?service=33462"
-    print("fetching data from " + url)
-    r = requests.get(url)
-    data = r.json()
-    return data
 
 def plot_smopy(lats, lons, observable_values_in_minutes,
                observable_name, scalar_mappable,
@@ -63,11 +57,10 @@ def plot_smopy(lats, lons, observable_values_in_minutes,
     return ax
 
 
-use_swimming_halls = True
+use_swimming_halls = False
 
 if use_swimming_halls:
-    fname = os.path.join(RESULTS_DIRECTORY, "swimming_halls_json.pickle")
-    target_locations = get_data_or_compute(fname, get_swimming_halls)
+    target_locations = get_swimming_hall_data()
     fname_postfix = "swimming_halls"
 else:
     helsinki_railway_station = {"latitude": 60.171861, "longitude": 24.941415}
@@ -96,9 +89,18 @@ def get_closest_nodes():
     return closest_stops
 
 
-closest_stop_Is = get_data_or_compute(closest_stops_fname, get_closest_nodes, recompute=recompute_all)
+# closest_stop_Is = get_data_or_compute(closest_stops_fname, get_closest_nodes, recompute=recompute_all)
 
-targets = closest_stop_Is
+import settings
+if use_swimming_halls:
+    targets = settings.get_swimming_hall_stop_Is()
+else:
+    targets = [7543, # helsingin rautatieasema
+               # 7571, # leppävaaran asema
+               7593, # tikkurilan asema
+               7544] #, # pasilan asema
+               # 7608] # kirkkonummen asema  ]
+
 
 from compute import _compute_profile_data, __compute_profile_stats_from_profiles
 
@@ -108,13 +110,17 @@ kwargs_for_computations = {
     "track_time": True
 }
 
+
+
 profile_data_fname = os.path.join(RESULTS_DIRECTORY, "profiles_targets_multiple_targets_" + fname_postfix + ".pickle")
-profiles = get_data_or_compute(profile_data_fname, _compute_profile_data, recompute=recompute_all,
+print("Compute stop profiles")
+profiles = get_data_or_compute(profile_data_fname, _compute_profile_data, recompute=False,
                                **kwargs_for_computations)['profiles']
 
+print("Compute profiles")
 profile_data_fname = os.path.join(RESULTS_DIRECTORY, "profile_stats_multiple_targets_" + fname_postfix + ".pickle")
 profile_statistics = get_data_or_compute(profile_data_fname, __compute_profile_stats_from_profiles,
-                                         profiles, recompute=recompute_all)
+                                         profiles, recompute=False)
 
 observables_to_plot = ["mean_temporal_distance", "mean_n_boardings_on_shortest_paths"]
 boardings_data = numpy.array(profile_statistics["mean_n_boardings_on_shortest_paths"])
@@ -138,7 +144,7 @@ fig = plt.figure(figsize=(12, 5))
 axs = [plt.subplot(gs1[:, :4]), plt.subplot(gs2[:, :4])]
 caxs = [plt.subplot(gs1[:, 4:]), plt.subplot(gs2[:, 4:])]
 
-nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
+nodes = pandas.read_csv(HELSINKI_NODES_FNAME, sep=";")
 lats = nodes['lat'].values
 lons = nodes['lon'].values
 

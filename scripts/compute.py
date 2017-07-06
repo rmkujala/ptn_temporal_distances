@@ -10,7 +10,7 @@ import csv
 
 from gtfspy.routing.node_profile_analyzer_time_and_veh_legs import NodeProfileAnalyzerTimeAndVehLegs
 from gtfspy.routing.node_profile_multiobjective import NodeProfileMultiObjective
-from gtfspy.routing.models import Connection
+from gtfspy.routing.connection import Connection
 
 from gtfspy.routing.multi_objective_pseudo_connection_scan_profiler import MultiObjectivePseudoCSAProfiler
 
@@ -75,7 +75,7 @@ def read_connections_pandas(events_fname=HELSINKI_TRANSIT_CONNECTIONS_FNAME,
     time_filtered_events.sort_values("dep_time_ut", ascending=False, inplace=True)
 
     connections = [
-        Connection(int(e.from_stop_I), int(e.to_stop_I), int(e.dep_time_ut), int(e.arr_time_ut), int(e.trip_I))
+        Connection(int(e.from_stop_I), int(e.to_stop_I), int(e.dep_time_ut), int(e.arr_time_ut), int(e.trip_I), int(e.seq))
         for e in time_filtered_events.itertuples()
         ]
     return connections
@@ -88,12 +88,13 @@ def read_connections_csv(events_fname=HELSINKI_TRANSIT_CONNECTIONS_FNAME,
     Read events from a csv file, and create a list of Connection objects.
     Uses the built-in
     """
-    # header: from_stop_I, to_stop_I, dep_time_ut, arr_time_ut, route_type, route_id, trip_I, seq
+    # header: from_stop_I, to_stop_I, dep_time_ut, arr_time_ut, route_type, trip_I, seq, route_I
     from_node_index = 0
     to_node_index = 1
     dep_time_index = 2
     arr_time_index = 3
-    trip_I_index = 6
+    trip_I_index = 5
+    seq_index = 6
     connections = []
     with open(events_fname, 'r') as csvfile:
         events_reader = csv.reader(csvfile, delimiter=',')
@@ -104,7 +105,7 @@ def read_connections_csv(events_fname=HELSINKI_TRANSIT_CONNECTIONS_FNAME,
             if routing_start_time_dep <= dep_time <= routing_end_time_dep:
                 connections.append(
                     Connection(int(row[from_node_index]), int(row[to_node_index]), int(row[dep_time_index]),
-                               int(row[arr_time_index]), int(row[trip_I_index])))
+                               int(row[arr_time_index]), int(row[trip_I_index]), int(row[seq_index])))
     connections = sorted(connections, key=lambda conn: -conn.departure_time)
     return connections
 
@@ -274,7 +275,7 @@ def __compute_profile_stats_from_profiles(profile_data):
     observable_name_to_method = dict(zip(profile_observable_names, profile_summary_methods))
     observable_name_to_data = dict(zip(profile_observable_names, profile_summary_data))
 
-    nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
+    nodes = pandas.read_csv(HELSINKI_NODES_FNAME, sep=";")
     for stop_I in nodes['stop_I'].values:
         try:
             profile = profile_data[stop_I]
@@ -287,7 +288,7 @@ def __compute_profile_stats_from_profiles(profile_data):
             observable_value = method(profile_analyzer)
             if observable_value is None:
                 print(observable_name, stop_I)
-            _assert_results_are_positive_or_infs_or_nans(observable_value)
+            _assert_results_are_positive_or_infs_or_nans(numpy.array([observable_value]))
             observable_name_to_data[observable_name].append(observable_value)
     return observable_name_to_data
 

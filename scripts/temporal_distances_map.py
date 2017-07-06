@@ -10,7 +10,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from compute import get_node_profile_statistics
 from plot_profiles_on_a_map import _plot_smopy
-from settings import AALTO_STOP_ID, HELSINKI_NODES_FNAME, FIGS_DIRECTORY
+from settings import HELSINKI_NODES_FNAME, FIGS_DIRECTORY
 
 """
 Code for plotting temporal distance maps, and their differences.
@@ -19,15 +19,15 @@ Code for plotting temporal distance maps, and their differences.
 colorbar_axes = []
 rc("text", usetex=True)
 
-targets = [AALTO_STOP_ID]
-nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
+import settings
+targets = [settings.get_stop_I_by_stop_id(settings.AALTO_UNIVERSITY_ID)]
+nodes = pandas.read_csv(HELSINKI_NODES_FNAME, sep=";")
 
 targets_info = nodes[nodes.stop_I.isin(targets)]
 target_lats = targets_info['lat']
 target_lons = targets_info['lon']
 
-print(len(nodes))
-data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=True)
+data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=False)
 observable_name_to_data = data
 min_temporal_distances = numpy.array(data["min_temporal_distance"])
 mean_temporal_distances = numpy.array(data["mean_temporal_distance"])

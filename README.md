@@ -35,6 +35,11 @@ Other (more standard) dependencies include:
 ## Scripts
 
 ### Modules used by all / most analysis scripts
+- `prepare.py`
+    - Add extra stops (or "locations" ) to the schedule database + create updated extracts.
+
+
+### Modules used by all / most analysis scripts
 - `settings.py`
     - Shared settings for the analyses
 - `compute.py`
@@ -68,7 +73,7 @@ Other (more standard) dependencies include:
 - `plot_temporal_distance_profiles_simple_verification.py`
     - Plot fastest-path temporal distance profiles using a simple profiler that only tracks time.
 - `plot_profiles_on_a_map.py`
-    - Old legacy code that was no longer used.
+    - Mostly old code that is no longer used.
 
 ### Other plots
 - `schematic_plots.py`
@@ -77,6 +82,13 @@ Other (more standard) dependencies include:
     - Plot a crude node-time diagram of a list of events.
 - `plot_route_map.py`
     - Plot a route map showing the PT organization.
+
+## To rerun the analyses
+
+0. Run scripts/prepare.py to get all necessary data.
+1. python scripts/plot_route_map.py
+2. Run the scripts found listed above under Scripts -> Analyses
+3. Run the scripts found listed above under Scripts -> All-to-all Analyses
 
 ## Author / Point of contact:
 Rainer Kujala (Rainer.Kujala@gmail.com; @rmkujala)

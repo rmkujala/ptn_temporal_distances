@@ -34,6 +34,9 @@ events = [
 
 # events = [event for event in events if event[3] < 15]
 
+
+
+
 node_name_to_index = {name:i for i, name in enumerate("abcde")}
 max_y = 1
 min_y = 0

@@ -14,19 +14,20 @@ rc("text", usetex=True)
 recompute = False
 
 # change to settings.ITAKESKUS_STOP_ID to see the opposite direction:
-destination_stop_I = settings.AALTO_STOP_ID
-
-assert(destination_stop_I in [settings.AALTO_STOP_ID, settings.ITAKESKUS_STOP_ID])
+destination_stop_id = settings.AALTO_UNIVERSITY_ID
+destination_stop_I = settings.get_stop_I_by_stop_id(destination_stop_id)
 
 # some setting up of filenames and origin stops
-if destination_stop_I is settings.AALTO_STOP_ID:
-    origin_stop_I = settings.ITAKESKUS_STOP_ID
+if destination_stop_id is settings.AALTO_UNIVERSITY_ID:
+    origin_stop_id = settings.ITAKESKUS_ID
     profile_fname_prefix = "itakeskus_to_aalto"
-    ax1_title = 'From It\\"akeskus to Alvar Aalto\'s park'
+    ax1_title = 'From It\\"akeskus to Aalto University'
 else:
-    origin_stop_I = settings.AALTO_STOP_ID
+    origin_stop_id = settings.AALTO_UNIVERSITY_ID
     profile_fname_prefix = "aalto_to_itakeskus"
-    ax1_title = 'From Alvar Aalto\'s park to It\\"akeskus'
+    ax1_title = 'From Aalto University to It\\"akeskus'
+
+origin_stop_I = settings.get_stop_I_by_stop_id(origin_stop_id)
 
 # Computing the profile and caching some of the data
 profile_fname = os.path.join(settings.RESULTS_DIRECTORY, profile_fname_prefix + "_profile.pickle")
@@ -77,8 +78,8 @@ ax2 = plt.subplot2grid(subplot_grid, (0, 6), colspan=2, rowspan=1)
 ax2 = npa.plot_temporal_distance_pdf_horizontal(use_minutes=True,
                                                 ax=ax2,
                                                 legend_font_size=11)
-ax1.set_ylim(0, 70)
-ax2.set_ylim(0, 70)
+ax1.set_ylim(0, 80)
+ax2.set_ylim(0, 80)
 ax2.set_xticks([0.00, 0.05, 0.1])
 ax2.set_ylabel("Temporal distance $\\tau$ (min)")
 ax2.set_xlabel("Probability density $P(\\tau)$")

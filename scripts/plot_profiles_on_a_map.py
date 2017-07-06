@@ -1,14 +1,11 @@
-import folium
 import matplotlib
 import matplotlib.cm
 import matplotlib.colors
 import matplotlib.pyplot as plt
-import mplleaflet
 import numpy
 import pandas
 
 from compute import get_node_profile_statistics, target_list_to_str
-from settings import AALTO_STOP_ID
 from settings import HELSINKI_NODES_FNAME, DARK_TILES
 from settings import RESULTS_DIRECTORY
 from util import get_smopy_map
@@ -22,6 +19,8 @@ points on map using folium, smopy and leaflet.
 
 def plot_temporal_distances():
     # old code here to plot plenty of stuff
+    from settings import AALTO_STOP_ID
+
     targets = [AALTO_STOP_ID]  # [115, 3063]  # kamppi, kilo
     nodes = pandas.read_csv(HELSINKI_NODES_FNAME)
     data = get_node_profile_statistics(targets, recompute=True, recompute_profiles=False)
@@ -118,6 +117,7 @@ def plot_temporal_distances():
 
 
 def _plot_mplleafflet(lats, lons, observable_values_in_minutes, observable_name, scalar_mappable, basename, node_names):
+    import mplleaflet
     fig = plt.figure()
     ax = fig.add_subplot(111)
     colors = scalar_mappable.to_rgba(observable_values_in_minutes)
@@ -151,8 +151,9 @@ def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scala
     colors = scalar_mappable.to_rgba(observable_values_in_minutes)
 
     assert (isinstance(ax, matplotlib.axes.Axes))
-    valids = observable_values_in_minutes < float('inf')
-    ax.scatter(xs[valids], ys[valids], c=colors[valids], edgecolors=colors[valids], s=s)
+
+    # valids = observable_values_in_minutes < float('inf')
+    ax.scatter(xs, ys, c=colors, edgecolors=colors, s=s)
 
     if target_lats is not None and target_lons is not None:
         target_lats = numpy.array(target_lats)
@@ -179,6 +180,7 @@ def _plot_smopy(lats, lons, observable_values_in_minutes, observable_name, scala
 
 
 def _plot_folium(lats, lons, observable_values, observable_name, scalar_mappable, basename, node_names):
+    import folium
     center_lat = (numpy.percentile(lats, 1) + numpy.percentile(lats, 99)) / 2.
     center_lon = (numpy.percentile(lons, 1) + numpy.percentile(lons, 99)) / 2.
 
