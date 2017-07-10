@@ -3,7 +3,7 @@ This repository contains the scripts (written in Python 3) used for producing th
 "Travel times and transfers in public transport networks: comprehensive accessibility analysis based on Pareto-optimal journeys"
 
 ### License
-All scripts (under `scripts/`) are licensed under MIT. (See scripts/LICENSE).
+All scripts (under `scripts/`) are provided under the MIT license. (See scripts/LICENSE).
 
 ### Acknowledgment
 If you use these scripts, please cite our paper or give appropriate acknowledgement otherwise.
@@ -12,9 +12,8 @@ If you use these scripts, please cite our paper or give appropriate acknowledgem
 ## Data
 The data for running the analyses are provided under `data/`
 The original source data (events and stops) for our analyses consists of GTFS-data and OpenStreetMap extracts:
-- The original GTFS data has been downloaded from the Reittiopas API (http://developer.reittiopas.fi/pages/en/other-apis.php)
-- The OpenStreetMap data was downloaded from http://www.geofabrik.de/data/download.html (Open Database License 1.0.)
-    (used for computing walking distances)
+- The original GTFS data has been downloaded from the [Reittiopas API](http://developer.reittiopas.fi/pages/en/other-apis.php), and is provided under data/raw/
+- The OpenStreetMap data was downloaded from [Geofabrik's download server](http://download.geofabrik.de/europe/finland-latest.osm.pbf) (Open Database License 1.0., not provided in the repository due to large file size).
 
 ## Dependencies
 The preprocessing of the source data, and all scripts in this repository use the gtfspy Python package (https://github.com/CxAalto/gtfspy), which is also included as an explicit git-submodule dependency in this repository.
@@ -85,8 +84,8 @@ Other (more standard) dependencies include:
 
 ## To rerun the analyses
 
-0. Run scripts/prepare.py to get all necessary data.
-1. python scripts/plot_route_map.py
+0. ``python scripts/prepare.py``
+1. ``python scripts/plot_route_map.py``
 2. Run the scripts found listed above under Scripts -> Analyses
 3. Run the scripts found listed above under Scripts -> All-to-all Analyses
 
