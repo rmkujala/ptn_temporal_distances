@@ -40,7 +40,7 @@ pareto_front_durations = list(boardings_to_min_arr_time.values())
 
 ax.grid(linestyle=':', linewidth=0.5, zorder=-100)
 ax.scatter(boardings, durations, color="k", label="All journeys", s=20, zorder=40)
-ax.scatter(pareto_front_boardings, pareto_front_durations, color="red", s=70, alpha=0.5, label="Pareto front", zorder=20)
+ax.scatter(pareto_front_boardings, pareto_front_durations, color="red", s=70, alpha=0.5, label="Pareto frontier", zorder=20)
 
 ax.set_xlabel(r"Number of boardings $b$")
 ax.set_ylabel(r"Time to destination (min) $t_{arr} - t$")
@@ -48,7 +48,6 @@ ax.set_xticks([0, 1, 2, 3])
 ylim = ax.get_ylim()
 ax.set_ylim((ylim[0], 80))
 ax.legend(loc="upper right")
-
 
 plt.tight_layout()
 from settings import FIGS_DIRECTORY
